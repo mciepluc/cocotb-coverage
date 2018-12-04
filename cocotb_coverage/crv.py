@@ -32,9 +32,10 @@ Randomized - base class for objects intended to contain random variables
 """
 
 import random
-import constraint
 import inspect
 import itertools
+
+from cocotb_coverage import constraint
 
 class Randomized(object):
     """
