@@ -1,6 +1,8 @@
 
-'''Copyright (c) 2016, Marek Cieplucha, https://github.com/mciepluc
+'''Copyright (c) 2018, TDK Electronics
 All rights reserved.
+
+Author: Marek Cieplucha, https://github.com/mciepluc
 
 Redistribution and use in source and binary forms, with or without modification, 
 are permitted provided that the following conditions are met (The BSD 2-Clause 
@@ -287,7 +289,8 @@ class TestCRV(unittest.TestCase):
                   (foo.x, foo.y, foo.z, foo.n))
             
         self.assertTrue(foo.n > 5)
-if __name__ == '__main__':
+        
+if __name__ == '__main__':
     import sys
     print("PYTHON VERSION: ", sys.version)
     unittest.main()
