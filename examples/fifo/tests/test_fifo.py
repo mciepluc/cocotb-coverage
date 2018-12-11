@@ -161,20 +161,3 @@ def fifo_test(dut):
     
     #print coverage report
     reportCoverage(log.info, bins=True)
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-
