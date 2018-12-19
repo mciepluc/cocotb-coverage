@@ -1,6 +1,8 @@
 
-'''Copyright (c) 2017, Marek Cieplucha, https://github.com/mciepluc
+'''Copyright (c) 2016-2018, TDK Electronics
 All rights reserved.
+
+Author: Marek Cieplucha, https://github.com/mciepluc
 
 Redistribution and use in source and binary forms, with or without modification, 
 are permitted provided that the following conditions are met (The BSD 2-Clause 
@@ -54,7 +56,6 @@ import itertools
 # global variable collecting coverage in a prefix tree (trie)
 coverage_db = {}
 
-
 class CoverItem(object):
     """
     Class used to describe coverage groups.
@@ -91,7 +92,7 @@ class CoverItem(object):
         # notify callbacks
         for ii in self._threshold_callbacks:
             if (ii > 100 * current_coverage / self.size and
-                ii <= 100 * self.coverage / self.size):
+                ii <= self.cover_percentage):
                 self._threshold_callbacks[ii]()
 
     def _update_size(self, size):
@@ -114,6 +115,10 @@ class CoverItem(object):
         return self._coverage
 
     @property
+    def cover_percentage(self):
+        return 100 * self._coverage / self._size
+
+    @property
     def detailed_coverage(self):
         coverage = []
         for child in self._children:
@@ -123,17 +128,26 @@ class CoverItem(object):
 
 class CoverPoint(CoverItem):
     """
-    Class used to create coverage points as decorators. It matches predefined 
-    bins according to the rule rel(xf(args), bin) == True 
+    Class used to create coverage points as decorators. Sampling matches 
+    predefined bins according to the rule rel(xf(args), bin) == True 
     Syntax:
-    @coverage.CoverPoint(name, xf, rel, bins, weight, at_least, inj)
+    @coverage.CoverPoint(name, vname, xf, rel, bins, weight, at_least, inj)
     Where:
     name - a CoverPoint path and name, defining its position in a coverage trie
+
+    vname - (optional) a name of the variable to be covered (use it only when
+            covering a SINGLE variable)
     xf - (optional) transformation function, which transforms arguments of the 
-         decorated function (args)
+         decorated function
+    If vname and xf not defined, matched is a single input arguments (if only 
+    one exists) or a tuple (if multiple exist).
+    Note that "self" argument is ALWAYS removed from the argument list. 
+
+    bins - a list of bins objects to be matched
+
     rel - (optional) relation function which defines bins matching relation (by 
           default, equality operator)
-    bins - a list of bins objects to be matched
+    
     weight - (optional) a CoverPoint weight (by default 1)
     at_least - (optional) defines number of hits per bin to be considered as c
                overed (by default 1)
@@ -141,36 +155,53 @@ class CoverPoint(CoverItem):
           sampling (default False)
 
     Example:
-    @coverage.CoverPoint(
-      name = "top.parent.coverpoint", 
+    @coverage.CoverPoint( #covers (arg/2) < 1...5 (5 bins)
+      name = "top.parent.coverpoint1", 
       xf = lambda x : x/2, 
       rel = lambda x, y : x < y, 
-      bins = range(1,5)
+      bins = list(range(1,5))
     )
-    def decorated_fun(self, arg):
+    @coverage.CoverPoint( #covers (arg) == 1...5 (5 bins)
+      name = "top.parent.coverpoint2", 
+      vname = "arg",
+      bins = list(range(1,5))
+    )
+    def decorated_fun1(self, arg):
       ...
-    Bin from the bins list [1,2,3,4,5] will be matched when arg/2 < bin at 
-    decorated_fun call.
+
+    @coverage.CoverPoint( #covers (arg1, arg2) == (1, 1) or (0, 0) (2 bins)
+      name = "top.parent.coverpoint3", 
+      bins = [(1,1), (0,0)]
+    )
+    def decorated_fun1(self, arg1, arg2):
+      ...
+
     """
 
     # conditional Object creation, only if name not already registered
-    def __new__(cls, name, xf=None, rel=None, bins=[], weight=1, at_least=1, 
+    def __new__(cls, name, vname = None, xf=None, rel=None, bins=[], weight=1, at_least=1, 
                 inj=False):
         if name in coverage_db:
             return coverage_db[name]
         else:
             return super(CoverPoint, cls).__new__(CoverPoint)
 
-    def __init__(self, name, xf=None, rel=None, bins=[], weight=1, at_least=1, 
+    def __init__(self, name, vname = None, xf=None, rel=None, bins=[], weight=1, at_least=1, 
                  inj=False):
         if not name in coverage_db:
             CoverItem.__init__(self, name)
+            if self._parent is None:
+                raise Exception("CoverPoint must have a parent (parent.CoverPoint)")
+
             self._transformation = xf
+            self._vname = vname
+
             # equality operator is the defult bins matching relation
             self._relation = rel if rel is not None else operator.eq
             self._weight = weight
             self._at_least = at_least
             self._injection = inj
+
 
             if (len(bins) != 0):
                 self._size = self._weight * len(bins)
@@ -193,11 +224,18 @@ class CoverPoint(CoverItem):
 
             # if transformation function not defined, simply return arguments
             if self._transformation is None:
-                def dummy_f(*cb_args):  # return a tuple or single object
-                    if len(cb_args) > 1:
-                        return cb_args
-                    else:
-                        return cb_args[0]
+                if self._vname is None:
+                    def dummy_f(*cb_args):  # return a tuple or single object
+                        if len(cb_args) > 1:
+                            return cb_args
+                        else:
+                            return cb_args[0]
+                else: #if vname defined, match it to the decroated function args
+                    arg_names = list(inspect.signature(f).parameters)
+                    idx = arg_names.index(self._vname)
+                    def dummy_f(*cb_args):
+                        return cb_args[idx]                        
+ 
                 self._transformation = dummy_f
 
             # for the first time only check if decorates method in the class
@@ -206,16 +244,15 @@ class CoverPoint(CoverItem):
                 for x in inspect.getmembers(cb_args[0]):
                     if '__func__' in dir(x[1]):
                         # compare decorated function name with class functions
-                        self._decorates_method = f.__name__ == x[
-                            1].__func__.__name__
+                        self._decorates_method = f.__name__ == x[1].__func__.__name__
                         if self._decorates_method:
                             break
 
             # for the first time only check if a transformation function is a
             # method
             if self._trans_is_method is None:
-                self._trans_is_method = "self" in inspect.getargspec(
-                    self._transformation).args
+                self._trans_is_method = "self" in inspect.signature(
+                    self._transformation).parameters
 
             current_coverage = self.coverage
             self._new_hits = []
@@ -252,10 +289,6 @@ class CoverPoint(CoverItem):
         return _wrapped_function
 
     @property
-    def size(self):
-        return self._size
-
-    @property
     def coverage(self):
         coverage = self._size
         for ii in self._hits:
@@ -278,7 +311,7 @@ class CoverCross(CoverItem):
     cross-bins which are Cartesian products of bins defined in CoverPoints 
     (items).
     Syntax:
-    @coverage.CoverCross(name, items, ign_bins, weight, at_least, ign_rel)
+    @coverage.CoverCross(name, items, ign_bins, weight, at_least)
     Where:
     name - a CoverCross path and name, defining its position in a coverage trie
     items - a list of CoverPoints by names, to create a Cartesian product of 
@@ -287,8 +320,6 @@ class CoverCross(CoverItem):
     weight - (optional) a CoverCross weight (by default 1)
     at_least - (optional) defines number of hits per bin to be considered as 
                covered (by default 1)
-    ign_rel - (optional) defines a relation which applies to the ign_bins list 
-              (by default equality operator)
 
     Example:
     @coverage.CoverPoint(
@@ -313,21 +344,20 @@ class CoverCross(CoverItem):
     """
 
     # conditional Object creation, only if name not already registered
-    def __new__(cls, name, items=[], ign_bins=[], weight=1, at_least=1, 
-                ign_rel=None):
+    def __new__(cls, name, items=[], ign_bins=[], weight=1, at_least=1):
         if name in coverage_db:
             return coverage_db[name]
         else:
             return super(CoverCross, cls).__new__(CoverCross)
 
-    def __init__(self, name, items=[], ign_bins=[], weight=1, at_least=1, 
-                 ign_rel=None):
+    def __init__(self, name, items=[], ign_bins=[], weight=1, at_least=1):
         if not name in coverage_db:
             CoverItem.__init__(self, name)
+            if self._parent is None:
+                raise Exception("CoverCross must have a parent (parent.CoverCross)")
             self._weight = weight
             self._at_least = at_least
             # equality operator is the defult ignore bins matching relation
-            self._relation = ign_rel if ign_rel is not None else operator.eq
             self._items = items
 
             bins_lists = []
@@ -339,14 +369,14 @@ class CoverCross(CoverItem):
             self._hits = dict.fromkeys(itertools.product(*bins_lists), 0)
 
             # remove ignore bins from _hits map if relation is true
-            for x_bins in self._hits.keys():
+            for x_bins in list(self._hits.keys()):
                 for ignore_bins in ign_bins:
                     remove = True
                     for ii in range(0, len(x_bins)):
                         if ignore_bins[ii] is not None:
-                            if not self._relation(ignore_bins[ii], x_bins[ii]):
+                            if (ignore_bins[ii] != x_bins[ii]):
                                 remove = False
-                    if remove:
+                    if remove and (x_bins in self._hits):
                         del self._hits[x_bins]
 
             self._size = self._weight * len(self._hits)
@@ -382,10 +412,6 @@ class CoverCross(CoverItem):
 
             return f(*cb_args, **cb_kwargs)
         return _wrapped_function
-
-    @property
-    def size(self):
-        return self._size
 
     @property
     def coverage(self):
@@ -438,6 +464,8 @@ class CoverCheck(CoverItem):
     def __init__(self, name, f_fail, f_pass=None, weight=1, at_least=1):
         if not name in coverage_db:
             CoverItem.__init__(self, name)
+            if self._parent is None:
+                raise Exception("CoverCheck must have a parent (parent.CoverCheck)")
             self._weight = weight
             self._at_least = at_least
             self._f_pass = f_pass
@@ -476,11 +504,11 @@ class CoverCheck(CoverItem):
 
             # for the first time only check if a pass/fail function is a method
             if self._f_pass_is_method is None and self._f_pass:
-                self._f_pass_is_method = "self" in inspect.getargspec(
-                    self._f_pass).args
+                self._f_pass_is_method = "self" in inspect.signature(
+                    self._f_pass).parameters
             if self._f_fail_is_method is None:
-                self._f_fail_is_method = "self" in inspect.getargspec(
-                    self._f_fail).args
+                self._f_fail_is_method = "self" in inspect.signature(
+                    self._f_fail).parameters
 
             current_coverage = self.coverage
 
@@ -522,10 +550,6 @@ class CoverCheck(CoverItem):
 
             return f(*cb_args, **cb_kwargs)
         return _wrapped_function
-
-    @property
-    def size(self):
-        return self._size
 
     @property
     def coverage(self):

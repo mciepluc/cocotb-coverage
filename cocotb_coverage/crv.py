@@ -1,6 +1,8 @@
 
-'''Copyright (c) 2017, Marek Cieplucha, https://github.com/mciepluc
+'''Copyright (c) 2016-2018, TDK Electronics
 All rights reserved.
+
+Author: Marek Cieplucha, https://github.com/mciepluc
 
 Redistribution and use in source and binary forms, with or without modification, 
 are permitted provided that the following conditions are met (The BSD 2-Clause 
@@ -279,8 +281,8 @@ class Randomized(object):
             # could be a Constraint object...
             pass
         else:
-            variables = inspect.getargspec(cstr).args
-            assert (variables == sorted(variables)), \
+            variables = inspect.signature(cstr).parameters
+            assert (list(variables) == sorted(variables)), \
                 "Variables of a constraint function must be defined in \
                 alphabetical order"
 
@@ -332,7 +334,7 @@ class Randomized(object):
             # could be a Constraint object...
             pass
         else:
-            variables = inspect.getargspec(cstr).args
+            variables = inspect.signature(cstr).parameters
 
             rand_variables = [
                 var for var in variables if var in rvars]
@@ -420,7 +422,7 @@ class Randomized(object):
                 actualCstr = []
                 for f_cstr in allConstraints:
                     self.delConstraint(f_cstr)
-                    f_cstr_args = inspect.getargspec(f_cstr).args
+                    f_cstr_args = inspect.signature(f_cstr).parameters
                     #add only constraints containing actualRVars but not
                     #remainingRVars
                     add_cstr = True
@@ -468,7 +470,7 @@ class Randomized(object):
                 f_cstr = self._simpleConstraints[rvar]
                 # check if we have non-random vars in cstr...
                 # arguments of the constraint function
-                f_c_args = inspect.getargspec(f_cstr).args
+                f_c_args = inspect.signature(f_cstr).parameters
                 for ii in domain:
                     f_cstr_callvals = []
                     for f_c_arg in f_c_args:
@@ -547,7 +549,7 @@ class Randomized(object):
             # for all defined implicit distributions
             for dstr in self._implDistributions:
                 f_idstr = self._implDistributions[dstr]
-                f_id_args = inspect.getargspec(f_idstr).args
+                f_id_args = inspect.signature(f_idstr).parameters
                 # all variables in solution we need to calculate weight
                 f_id_callvals = []
                 for f_id_arg in f_id_args:  # for each variable name
@@ -563,7 +565,7 @@ class Randomized(object):
                 # if it is not, it will be calculated in step 4
                 if dstr in sol:
                     f_sdstr = self._simpleDistributions[dstr]
-                    f_sd_args = inspect.getargspec(f_sdstr).args
+                    f_sd_args = inspect.signature(f_sdstr).parameters
                     # all variables in solution we need to calculate weight
                     f_sd_callvals = []
                     for f_sd_arg in f_sd_args:  # for each variable name
@@ -591,7 +593,7 @@ class Randomized(object):
                     # a simple distribution to be applied
                     f_dstr = self._simpleDistributions[dvar]
                     # check if we have non-random vars in dstr...
-                    f_d_args = inspect.getargspec(f_dstr).args
+                    f_d_args = inspect.signature(f_dstr).parameters
                     # list of lists of values for function call
                     f_d_callvals = []
                     for i in domain:
@@ -653,3 +655,4 @@ class Randomized(object):
         for var in self._randVariables:
             if var in solution:
                 setattr(self, var, solution[var])
+
