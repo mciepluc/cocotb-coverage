@@ -1,9 +1,9 @@
 # cocotb-coverage
 Functional Coverage and Constrained Randomization Extensions for Cocotb
 
-This package allows you to use constrained randomization and functional coverage techniques known from CRV (constrained random verification) and MDV (metric-driven verification) methodologies, available in SystemVerilog or _e_. Such extensions enable implementation of the advanced verification environment for complex projects.
+This package allows you to use constrained randomization and functional coverage techniques known from CRV (constrained random verification) and MDV (metric-driven verification) methodologies, available in SystemVerilog or _e_. Such extensions enable the implementation of an advanced verification environment for complex projects.
 
-The implemented funcionality was intended to be well-undertood by SystemVerilog users and provides significant extensions compared to Hardware Verification Languages. 
+The implemented funcionality is intended to be easily understandable by SystemVerilog users and provides significant extensions compared to Hardware Verification Languages. 
 
 References:
 * Cocotb Core Package - [cocotb](https://github.com/potentialventures/cocotb)
@@ -13,7 +13,7 @@ References:
 
 Simple example below:
 ```Python
-#point represented by x and y coordinates in range (-10,10)
+# point represented by x and y coordinates in range (-10,10)
 class Point(crv.Randomized):
 
     def __init__(self, x, y):
@@ -23,17 +23,17 @@ class Point(crv.Randomized):
 
         self.addRand("x", list(range(-10, 10)))
         self.addRand("y", list(range(-10, 10)))
-        #constraining the space such as x < y
+        # constraining the space so that x < y
         self.addConstraint(lambda x, y: x < y)
 
 ...
 
-#create an arbitrary point
+# create an arbitrary point
 p = Point(0,0)
 
 for _ in range (10):
     
-    #cover example arithmetic properties
+    # cover example arithmetic properties
     @CoverPoint("top.x_negative", xf = lambda point : point.x < 0, bins = [True, False])
     @CoverPoint("top.y_negative", xf = lambda point : point.y < 0, bins = [True, False])
     @CoverPoint("top.xy_equal", xf = lambda point : point.x == point.y, bins = [True, False])
@@ -41,7 +41,7 @@ for _ in range (10):
     def plot_point(point):
         ...
     
-    p.randomize() #randomize object
-    plot_point(p) #call a function which will sample the coverage
+    p.randomize()  # randomize object
+    plot_point(p)  # call a function which will sample the coverage
               
 ```
