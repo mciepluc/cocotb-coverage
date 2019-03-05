@@ -1,14 +1,17 @@
 # cocotb-coverage
 Functional Coverage and Constrained Randomization Extensions for Cocotb
 
+[![Documentation Status](https://readthedocs.org/projects/cocotb-coverage/badge/?version=latest)](http://cocotb-coverage.readthedocs.org/en/latest/)
+
 This package allows you to use constrained randomization and functional coverage techniques known from CRV (constrained random verification) and MDV (metric-driven verification) methodologies, available in SystemVerilog or _e_. Such extensions enable the implementation of an advanced verification environment for complex projects.
 
-The implemented funcionality is intended to be easily understandable by SystemVerilog users and provides significant extensions compared to Hardware Verification Languages. 
+The implemented functionality is intended to be easily understandable by SystemVerilog users and provides significant extensions compared to Hardware Verification Languages. 
 
 References:
+* Package Documentation - [cocotb-coverage](https://cocotb-coverage.readthedocs.io)
 * Cocotb Core Package - [cocotb](https://github.com/potentialventures/cocotb)
 * DVCon 2017 Paper - [New Constrained Random and MDV Methodology using Python](http://events.dvcon.org/2017/proceedings/papers/02_3.pdf)
-* DVCon 2017 Presentation - [SLIDES](http://events.dvcon.org/2017/proceedings/slides/02_3.pdf)
+* DVCon 2017 Presentation - [Slides](http://events.dvcon.org/2017/proceedings/slides/02_3.pdf)
 * Example Advanced Project - [APB_I2C Cocotb Example](https://github.com/mciepluc/apbi2c_cocotb_example)
 
 Simple example below:
