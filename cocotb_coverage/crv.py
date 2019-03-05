@@ -1,37 +1,31 @@
+# Copyright (c) 2016-2018, TDK Electronics
+# All rights reserved.
+#
+# Author: Marek Cieplucha, https://github.com/mciepluc
+#
+# Redistribution and use in source and binary forms, with or without modification,
+# are permitted provided that the following conditions are met (The BSD 2-Clause
+# License):
+#
+# 1. Redistributions of source code must retain the above copyright notice,
+# this list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+# this list of conditions and the following disclaimer in the documentation and/or
+# other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL POTENTIAL VENTURES LTD BE LIABLE FOR ANY
+# DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-'''Copyright (c) 2016-2018, TDK Electronics
-All rights reserved.
-
-Author: Marek Cieplucha, https://github.com/mciepluc
-
-Redistribution and use in source and binary forms, with or without modification, 
-are permitted provided that the following conditions are met (The BSD 2-Clause 
-License):
-
-1. Redistributions of source code must retain the above copyright notice, 
-this list of conditions and the following disclaimer.
-
-2. Redistributions in binary form must reproduce the above copyright notice, 
-this list of conditions and the following disclaimer in the documentation and/or 
-other materials provided with the distribution.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL POTENTIAL VENTURES LTD BE LIABLE FOR ANY
-DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. '''
-
-"""
-Constrained-random verification features.
-
-Classes:
-Randomized - base class for objects intended to contain random variables
-"""
+"""Constrained-random verification features."""
 
 import random
 import inspect
@@ -40,94 +34,109 @@ import itertools
 from cocotb_coverage import constraint
 
 class Randomized(object):
-    """
-    Base class for randomized types. Final class should contain defined random 
-    variables using addRand() method. Constraints may be added/deleted using 
-    add/delConstraint() methods. 
-    Constraint is an arbitrary function and may either return a true/false value
-    (hard constraints) or a numeric value, which may be interpreted as soft 
-    constraints or distribution functions. Constraint function arguments must 
-    match final class attributes (random or not). Constraints may have multiple 
-    random arguments which corresponds to multi-dimensional distributions.
-    Function randomize() performs a randomization for all random variables 
-    meeting all defined  constraints. 
-    Function randomize_with() performs a randomization using additional 
+    """Base class for randomized types.
+
+    The final class should contain defined random
+    variables using the :meth:`addRand()` method.
+
+    Constraints may be added and deleted using the
+    :meth:`addConstraint()` and :meth:`delConstraint()` methods respectively.
+
+    A constraint is an arbitrary function and may either return a ``True``/``False`` value
+    (*hard constraints*) or a numeric value, which may be interpreted as *soft
+    constraints* or *distribution functions*.
+
+    Constraint function arguments must match final class attributes (random or not).
+    Constraints may have multiple random arguments for to multi-dimensional distributions.
+
+    The function :meth:`randomize()` performs a randomization for all random variables
+    meeting all defined  constraints.
+
+    The function :meth:`randomize_with()` performs a randomization using additional
     constraint functions given in an argument.
-    Functions pre/post_randomize() are called before/after randomize and should 
-    be overloaded in a final class if necessary. 
+
+    The functions :meth:`pre_randomize()` and :meth:`post_randomize()` are called
+    before and after :meth:`randomize` and should be overloaded in a final class if necessary.
+
     If a hard constraint cannot be resolved, an exception is thrown. If a soft
-    constraint cannot be resolved (all acceptable solutions have 0 probability)
-    a variable value is not being randomized. 
+    constraint cannot be resolved (all acceptable solutions have 0 probability),
+    a variable value is not being randomized.
 
     Example:
-    class FinalRandomized(Randomized)
-      def __init__(self, x):
-        Randomized.__init__(self)
-        self.x = x
-        self.y = 0
-        self.z = 0
-        #define y as a random variable taking values from 0 to 9
-        addRand(y, list(range(10)))
-        #define z as a random variable taking values from 0 to 4
-        addRand(z, list(range(5)))  
-        addConstraint(lambda x, y: x !=y ) #hard constraint
-        addConstraint(lambda y, z: y + z ) #multi-dimensional distribution
 
-    object = FinalRandomized(5)
-    object.randomize_with(lambda z : z > 3) #additional constraint to be applied
+    >>> class FinalRandomized(Randomized):
+    >>>   def __init__(self, x):
+    >>>       Randomized.__init__(self)
+    >>>       self.x = x
+    >>>       self.y = 0
+    >>>       self.z = 0
+    >>>
+    >>>       # define y as a random variable taking values from 0 to 9
+    >>>       addRand(y, list(range(10)))
+    >>>
+    >>>       # define z as a random variable taking values from 0 to 4
+    >>>       addRand(z, list(range(5)))
+    >>>
+    >>>       addConstraint(lambda x, y: x !=y)  # hard constraint
+    >>>       addConstraint(lambda y, z: y + z)  # multi-dimensional distribution
+    >>>
+    >>> object = FinalRandomized(5)
+    >>> object.randomize_with(lambda z : z > 3)  # additional constraint to be applied
 
-    As generating constrained random objects may involve a lot of computations, 
-    it is recommended to limit random variables domains and use 
-    pre/post_randomize() methods where possible. 
+    As generating constrained random objects may involve a lot of computations,
+    it is recommended to limit random variables domains and use
+    :meth:`pre_randomize()`/:meth:`post_randomize()` methods where possible.
     """
+
     def __init__(self):
         # all random variables, map NAME -> DOMAIN
         self._randVariables = {}
-        
+
         # all simple constraints: functions of single random variable and
         # optional non-random variables
         # map VARIABLE NAME -> FUNCTION
         self._simpleConstraints = {}
-        
+
         # all implicit constraints: functions that requires to be resolved by a
         # Solver
         # map TUPLE OF VARIABLE NAMES -> FUNCTION
         self._implConstraints = {}
-        
+
         # all implicit distributions: functions that involve implicit random
         # variables and single unconstrained variable
         # map TUPLE OF VARIABLE NAMES -> FUNCTION
         self._implDistributions = {}
-        
+
         # all simple distributions: functions of unconstrained random variables
         # and non-random variables
         # map VARIABLE NAME -> FUNCTION
         self._simpleDistributions = {}
-        
+
         # list of lists containing random variables solving order
         self._solveOrder = []
 
     def addRand(self, var, domain=None):
-        """
-        Adds a random variable to the solver. All random variables must be 
-        defined before adding any constraint. Therefore it is highly 
-        recommended to do this in an __init__ method. 
-        Syntax:
-        addRand(var, domain)
-        Where:
-        var - a variable name (str) corresponding to the class member variable
-        domain - a list of all allowed values of the variable var
+        """Add a random variable to the solver.
+
+        All random variables must be defined before adding any constraint with :meth:`addConstraint`.
+        Therefore it is highly recommended to call ``addRand`` in an ``__init__`` method.
+
+        Args:
+            var (str): a variable name corresponding to the class member variable.
+            domain (list, optional): a list of all allowed values of the variable ``var``.
+                If ``None``, the list ``0`` to ``65535-1`` (16 bit unsigned int) is used.
 
         Examples:
-        addRand("data", list(range(1024)))
-        addRand("delay", ["small", "medium", "high"])
+
+        >>> addRand("data", list(range(1024)))
+        >>> addRand("delay", ["small", "medium", "high"])
         """
         assert (not (self._simpleConstraints or
                      self._implConstraints or
                      self._implDistributions or
                      self._simpleDistributions)
                 ), \
-            "All random variable must be defined before adding a constraint"
+            "All random variables must be defined before adding a constraint."
 
         if not domain:
             domain = range(65535)  # 16 bit unsigned int
@@ -135,72 +144,84 @@ class Randomized(object):
         self._randVariables[var] = domain  # add a variable to the map
 
     def addConstraint(self, cstr):
-        """
-        Adds a constraint function to the solver. A constraint may return a 
-        true/false or a numeric value. Constraint function arguments must be 
-        valid class member names (random or not). Arguments must be listed in 
-        alphabetical order. Due to calculation complexity, it is recommended to 
-        create as few constraints as possible and implement pre/post 
-        randomization methods or use solveOrder() function.
-        Each constraint is associated with its arguments being random variables, 
-        which means for each random variable combination only one constraint of 
-        the true/false type and one numeric may be defined. The latter will 
-        overwrite the existing one. For example, when class has two random 
-        variables (x,y), 6 constraint functions may be defined: boolean and 
-        numeric constraints of x, y and a pair (x,y).  
-        Syntax:
-        (ovewritting = )addConstraint(cstr)
-        Where:
-        cstr - a constraint function
-        overwritting - returns an overwritten constraint or None if no overwrite
-                       happened (optional)
+        """Add a constraint function to the solver.
+
+        A constraint may return ``True``/``False`` or a numeric value.
+        Constraint function arguments must be valid class member names (random or not).
+        Arguments must be listed in alphabetical order.
+
+        Due to calculation complexity, it is recommended to
+        create as few constraints as possible and implement
+        :meth:`pre_randomize()`/:meth:`post_randomize()`
+        methods, or use the :meth:`solveOrder()` function.
+
+        Each constraint is associated with its arguments being random variables,
+        which means for each random variable combination only one constraint of
+        the ``True``/``False`` type and one numeric may be defined
+        The latter will overwrite the existing one.
+
+        For example, when class has two random variables ``(x, y)``,
+        6 constraint functions may be defined: boolean and numeric constraints
+        of ``x``, ``y`` and a pair ``(x, y)``.
+
+        Args:
+            cstr: A constraint function.
+
+        Returns:
+            constraint or None: an overwritten constraint or ``None`` if no overwrite happened (optional).
 
         Examples:
-        def highdelay_cstr(delay):
-          delay == "high"
-        addConstraint(highdelay_cstr) #hard constraint
-        addConstraint(lambda data : data < 128) #hard constraint
-        #distribution (highest probability density at the boundaries):
-        addConstraint(lambda data : abs(64 - data)) 
-        #hard constraint of multiple variables (some of them may be non-random):
-        addConstraint(lambda x,y,z : x + y + z == 0) 
-        #soft constraint created by applying low probability density for some 
-        #solutions:
-        addConstraint(
-          lambda delay, size : 0.01 if (size < 5 & delay == "medium") else 1
-        ) 
-        #this constraint will overwrite the previously defined (data < 128)
-        addConstraint(lambda data : data < 256)
+
+        >>> def highdelay_cstr(delay):
+        >>>     return delay == "high"
+        >>>
+        >>> addConstraint(highdelay_cstr)  # hard constraint
+        >>> addConstraint(lambda data : data < 128)  # hard constraint
+        >>>
+        >>> # distribution (highest probability density at the boundaries):
+        >>> addConstraint(lambda data : abs(64 - data))
+        >>>
+        >>> # hard constraint of multiple variables (some of them may be non-random):
+        >>> addConstraint(lambda x,y,z : x + y + z == 0)
+        >>>
+        >>> # soft constraint created by applying low probability density for some solutions:
+        >>> addConstraint(
+        >>>     lambda delay, size : 0.01 if (size < 5 & delay == "medium") else 1
+        >>> )
+        >>> # this constraint will overwrite the previously defined (data < 128)
+        >>> addConstraint(lambda data : data < 256)
         """
-        
-        #just add constraint considering all random variables 
+
+        # just add constraint considering all random variables
         return self._addConstraint(cstr, self._randVariables)
-        
+
     def solveOrder(self, *orderedVars):
-        """
-        Defines an order of the constraints resolving. May contain variable
-        names or lists with variable names. Constraints are resolved in a given
+        """Define an order of the constraints resolving.
+
+        May contain variable names or lists with variable names.
+        Constraints are resolved in a given
         order, which means for implicit constraint and distribution functions,
-        they may be treated as simple ones, as one some variables could be 
+        they may be treated as simple ones, as one some variables could be
         already resolved.
-        solveOrder(*orderedVars)
-        Where:
-        orderedVars - variables that are requested to be resolved in an specific
-                      order
+
+        Args:
+            orderedVars (str or list): Variables that are requested to be resolved in an specific order.
+
         Example:
-        addRand (x, list(range(0,10)))
-        addRand (y, list(range(0,10)))
-        addRand (z, list(range(0,10)))
-        addRand (w, list(range(0,10)))
-        addConstraint(lambda x, y : x + y = 9)
-        addConstraint(lambda z : z < 5) 
-        addConstraint(lambda w : w > 5)
-         
-        solveOrder(["x", "z"], "y"] 
-        #In first step, "z", "x" and "w" will be resolved, which means only 
-        #second  and third constraint will be applied. In second step, first 
-        #constraint will be resolved as it was requested to solve "y" after "x"
-        #and "z". "x" will be treated as a constant in this case.      
+
+        >>> addRand(x, list(range(0,10)))
+        >>> addRand(y, list(range(0,10)))
+        >>> addRand(z, list(range(0,10)))
+        >>> addRand(w, list(range(0,10)))
+        >>> addConstraint(lambda x, y : x + y = 9)
+        >>> addConstraint(lambda z : z < 5)
+        >>> addConstraint(lambda w : w > 5)
+        >>>
+        >>> solveOrder(["x", "z"], "y"]
+        >>> # In a first step, "z", "x" and "w" will be resolved, which means only
+        >>> # the second and third constraint will be applied. In a second step, the first
+        >>> # constraint will be resolved as it was requested to solve "y" after "x"
+        >>> # and "z". "x" will be treated as a constant in this case.
         """
         self._solveOrder = []
         for selRVars in orderedVars:
@@ -210,42 +231,39 @@ class Randomized(object):
                 self._solveOrder.append(selRVars)
 
     def delConstraint(self, cstr):
-        """
-        Deletes a constraint function.
-        Syntax:
-        delConstraint(cstr)
-        Where:
-        cstr - a constraint function
+        """Delete a constraint function.
+
+        Args:
+            cstr: A constraint function.
 
         Example:
-        delConstraint(highdelay_cstr) 
+
+        >>> delConstraint(highdelay_cstr)
         """
         return self._delConstraint(cstr, self._randVariables)
 
     def pre_randomize(self):
-        """
-        A function called before randomize(_with)(). To be overridden in a final 
-        class if used. 
+        """A function that is called before :meth:`randomize`/:meth:`randomize_with`.
+
+        To be overridden in a final class if used.
         """
         pass
 
     def post_randomize(self):
-        """
-        A function called after randomize(_with)(). To be overridden in a final 
-        class if used. 
+        """A function that is called after :meth:`randomize`/:meth:`randomize_with`.
+
+        To be overridden in a final class if used.
         """
         pass
 
     def randomize(self):
-        """
-        Randomizes a final class using only predefined constraints.
-        """
+        """Randomize a final class using only predefined constraints."""
         self._randomize()
 
     def randomize_with(self, *constraints):
-        """
-        Randomizes a final class using additional constraints given in an 
-        argument. Additional constraints may override existing ones.
+        """Randomize a final class using the additional constraints given.
+
+        Additional constraints may override existing ones.
         """
         overwritten_constrains = []
 
@@ -254,7 +272,7 @@ class Randomized(object):
             overwritten = self.addConstraint(cstr)
             if overwritten:
                 overwritten_constrains.append(overwritten)
-        
+
         raise_exception = False
         try:
             self._randomize()
@@ -268,15 +286,14 @@ class Randomized(object):
         # add back overwritten constraints
         for cstr in overwritten_constrains:
             self.addConstraint(cstr)
- 
+
         if raise_exception:
-            raise Exception("Could nor resolve implicit constraints!")
-            
+            raise Exception("Could not resolve implicit constraints!")
+
     def _addConstraint(self, cstr, rvars):
+        """Add a constraint for a specific random variables list
+        (which determines a type of a constraint - simple or implicit).
         """
-        Adds a constraint for a specific random variables list (which determines
-        a type of a constraint - simple or implicit).
-        """        
         if isinstance(cstr, constraint.Constraint):
             # could be a Constraint object...
             pass
@@ -324,12 +341,11 @@ class Randomized(object):
                         tuple(rand_variables), self._implDistributions)
 
             return overwriting
-        
+
     def _delConstraint(self, cstr, rvars):
+        """Delete a constraint for a specific random variables list
+        (which determines a type of a constraint - simple or implicit).
         """
-        Deletes a constraint for a specific random variables list (which 
-        determines a type of a constraint - simple or implicit).
-        """  
         if isinstance(cstr, constraint.Constraint):
             # could be a Constraint object...
             pass
@@ -353,48 +369,47 @@ class Randomized(object):
                     del self._implDistributions[tuple(rand_variables)]
                 else:
                     assert(0), "Could not delete a constraint!"
-        
-    
+
+
     def _randomize(self):
-        """
-        Calls _resolve and pre/post_randomize functions with respect to defined 
-        variables resolving order.
+        """Call :meth:`_resolve` and :meth:`pre_randomize`/:meth:`post_randomize`
+        functions with respect to defined variables resolving order.
         """
         self.pre_randomize()
         if not self._solveOrder:
-            #call _resolve for all random variables 
+            #call _resolve for all random variables
             solution = self._resolve(self._randVariables)
             self._update_variables(solution)
         else:
-            
+
             #list of random variables names
             remainingRVars = list(self._randVariables.keys())
-            
-            #list of resolved random variables names 
+
+            #list of resolved random variables names
             resolvedRVars = []
-            
+
             #list of random variables with defined solve order
-            remainingOrderedRVars = [item for sublist in self._solveOrder 
+            remainingOrderedRVars = [item for sublist in self._solveOrder
                                      for item in sublist]
-            
+
             allConstraints = [] # list of functions (all constraints and dstr)
-            allConstraints.extend([self._implConstraints[_] 
+            allConstraints.extend([self._implConstraints[_]
                                for _ in self._implConstraints])
-            allConstraints.extend([self._implDistributions[_] 
+            allConstraints.extend([self._implDistributions[_]
                                for _ in self._implDistributions])
-            allConstraints.extend([self._simpleConstraints[_] 
+            allConstraints.extend([self._simpleConstraints[_]
                                for _ in self._simpleConstraints])
-            allConstraints.extend([self._simpleDistributions[_] 
+            allConstraints.extend([self._simpleDistributions[_]
                                for _ in self._simpleDistributions])
-            
+
             for selRVars in self._solveOrder:
-                  
+
                 #step 1: determine all variables to be solved at this stage
                 actualRVars = list(selRVars) #add selected
                 for rvar in actualRVars:
                     remainingOrderedRVars.remove(rvar) #remove selected
                     remainingRVars.remove(rvar) #remove selected
-                
+
                 #if implicit constraint requires a variable which is not given
                 #at this stage, it will be resolved later
                 for rvar in remainingRVars:
@@ -408,16 +423,16 @@ class Randomized(object):
                     if rvar_unused and not rvar in remainingOrderedRVars:
                         actualRVars.append(rvar)
                         remainingRVars.remove(rvar)
-                
+
                 # a new map of random variables
                 newRandVariables = {}
                 for var in self._randVariables:
                     if var in actualRVars:
                         newRandVariables[var] = self._randVariables[var]
-                
+
                 #step 2: select only valid constraints at this stage
-                
-                #delete all constraints and add back but considering only 
+
+                #delete all constraints and add back but considering only
                 #limited list of random vars
                 actualCstr = []
                 for f_cstr in allConstraints:
@@ -427,38 +442,36 @@ class Randomized(object):
                     #remainingRVars
                     add_cstr = True
                     for var in f_cstr_args:
-                        if (var in self._randVariables and 
+                        if (var in self._randVariables and
                             not var in resolvedRVars and
                             (not var in actualRVars or var in remainingRVars)
                             ):
                             add_cstr = False
-                    if add_cstr:                      
+                    if add_cstr:
                         self._addConstraint(f_cstr, newRandVariables)
                         actualCstr.append(f_cstr)
-                
-                #call _resolve for all random variables 
+
+                #call _resolve for all random variables
                 solution = self._resolve(newRandVariables)
-                self._update_variables(solution) 
-                
+                self._update_variables(solution)
+
                 resolvedRVars.extend(actualRVars)
-                
+
                 #add back everything as it was before this stage
                 for f_cstr in actualCstr:
                     self._delConstraint(f_cstr, newRandVariables)
-                    
-                for f_cstr in allConstraints:  
+
+                for f_cstr in allConstraints:
                     self._addConstraint(f_cstr, self._randVariables)
-                
+
         self.post_randomize()
 
     def _resolve(self, randomVariables):
-        """
-        Resolves constraints for given random variables.
-        """
-        
+        """Resolve constraints for given random variables."""
+
         # we need a copy, as we will be updating domains
         randVariables = dict(randomVariables)
-        
+
         # step 1: determine search space by applying simple constraints to the
         # random variables
 
@@ -502,9 +515,9 @@ class Randomized(object):
 
         # solve problem
         solutions = problem.getSolutions()
-        
+
         if (len(solutions) == 0) & (len(constrainedVars) > 0):
-            raise Exception("Could nor resolve implicit constraints!")
+            raise Exception("Could not resolve implicit constraints!")
 
         # step 3: calculate implicit distributions for all random variables
         # except simple distributions
@@ -620,9 +633,7 @@ class Randomized(object):
         return solution
 
     def _weighted_choice(self, solutions, weights):
-        """
-        Gets a solution from the list with defined weights.
-        """
+        """Get a solution from the list with defined weights."""
         try:
             import numpy
             # pick weighted random
@@ -648,11 +659,8 @@ class Randomized(object):
             return random.choice(weighted_solutions)
 
     def _update_variables(self, solution):
-        """
-        Updates members of the final class after randomization.
-        """
+        """Update members of the final class after randomization."""
         # update class members
         for var in self._randVariables:
             if var in solution:
                 setattr(self, var, solution[var])
-

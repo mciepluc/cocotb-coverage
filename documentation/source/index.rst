@@ -27,15 +27,6 @@ CRV
     :undoc-members:
     :show-inheritance:
 
-Constraint
-~~~~~~~~~~
-
-.. automodule:: cocotb_coverage.constraint
-    :members:
-    :member-order: bysource
-    :undoc-members:
-    :show-inheritance:
-
 
 Indices and tables
 ------------------
