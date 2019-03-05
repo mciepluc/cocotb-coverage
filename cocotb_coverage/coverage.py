@@ -147,7 +147,7 @@ class CoverPoint(CoverItem):
         weight (optional): a ``CoverPoint`` weight (by default ``1``).
         at_least (int, optional): the number of hits per bin to be considered as 
             covered (by default ``1``).
-        inj (bool, optional): "inkection", defines if more than single bin can be matched 
+        inj (bool, optional): "injection", defines if more than single bin can be matched 
             at one sampling (default ``False``).
 
     Example:
@@ -163,14 +163,14 @@ class CoverPoint(CoverItem):
     ...     vname = "arg",
     ...     bins = list(range(1, 5))
     ... )
-    >>> def decorated_fun1(self, arg):
+    >>> def decorated_func1(self, arg):
     ...     ...
 
     >>> @coverage.CoverPoint(  # covers (arg1, arg2) == (1, 1) or (0, 0) (2 bins)
     ...     name = "top.parent.coverpoint3", 
     ...     bins = [(1, 1), (0, 0)]
     ... )
-    >>> def decorated_fun1(self, arg1, arg2):
+    >>> def decorated_func1(self, arg1, arg2):
     ...     ...
     """
 
@@ -308,11 +308,11 @@ class CoverCross(CoverItem):
     :class:`CoverPoints <CoverPoint>` (items).
 
     Args:
-        name (str): a CoverCross path and name, defining its position in a coverage trie.
+        name (str): a ``CoverCross`` path and name, defining its position in a coverage trie.
         items (list): a list of :class:`CoverPoints <CoverPoint>` by names, 
             to create a Cartesian product of cross-bins.
         ign_bins (list, optional): a list of bins to be ignored.
-        weight (optional): a CoverCross weight (by default ``1``).
+        weight (optional): a ``CoverCross`` weight (by default ``1``).
         at_least (int, optional): defines number of hits per bin to be considered as 
             covered (by default ``1``).
 
@@ -333,11 +333,11 @@ class CoverCross(CoverItem):
     ...     items = ["top.parent.coverpoint1", "top.parent.coverpoint2"],
     ...     ign_bins = [(1, 1), (5, 5)],
     ... )
-    >>> def decorated_fun(self, arg_a, arg_b):
+    >>> def decorated_func(self, arg_a, arg_b):
     ...     ...
 
     Bin from the bins list ``[(1, 2), (1, 3)...(5, 4)]`` will be matched when a tuple 
-    ``(x=arg_a, y=arg_b)`` sampled at ``decorated_fun`` call.
+    ``(x=arg_a, y=arg_b)`` was sampled at ``decorated_func`` call.
     """
 
     # conditional Object creation, only if name not already registered
@@ -430,13 +430,13 @@ class CoverCheck(CoverItem):
     "PASS" and "FAIL" and ``f_pass()`` and ``f_fail()`` functions. 
  
     Args:
-        name: a CoverCheck path and name, defining its position in a coverage trie.
-        f_fail: a failure function, if returned ``True``, a coverage level is set 0% 
+        name: a ``CoverCheck`` path and name, defining its position in a coverage trie.
+        f_fail: a failure function - if it returns ``True``, the coverage level is set to 0% 
             permanently.
-        f_pass: a pass function, if returned ``True`` coverage level is set 100% after 
+        f_pass: a pass function - if it returns ``True``, the coverage level is set to 100% after 
             ``at_least`` hits.
-        weight (optional): a CoverCheck weight (by default ``1``).
-        at_least (int, optional) defines how many times ``f_pass``` needs to be satisfied 
+        weight (optional): a ``CoverCheck`` weight (by default ``1``).
+        at_least (int, optional): defines how many times ``f_pass``` needs to be satisfied 
             (by default ``1``).
 
     Example:
@@ -445,12 +445,12 @@ class CoverCheck(CoverItem):
     ...     name = "top.parent.check", 
     ...     f_fail = lambda x : x == 0, 
     ...     f_pass = lambda x : x < 5)
-    >>> def decorated_fun(self, arg):
+    >>> def decorated_func(self, arg):
     ...     ...
 
-    A CoverCheck is satisfied (100% covered) when sampled ``arg < 5`` and never 
-    ``sampled arg == 0``.
-    A CoverCheck is failed (0% covered) when at least once sampled ``arg == 0``.
+    A ``CoverCheck`` is satisfied (100% covered) when ``arg < 5`` and never 
+    ``arg == 0`` was sampled.
+    A ``CoverCheck`` is failed (0% covered) when at least once ``arg == 0`` was sampled.
     """
     
     # conditional Object creation, only if name not already registered

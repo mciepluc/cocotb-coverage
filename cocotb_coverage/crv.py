@@ -59,7 +59,7 @@ class Randomized(object):
     before and after :meth:`randomize` and should be overloaded in a final class if necessary.
 
     If a hard constraint cannot be resolved, an exception is thrown. If a soft
-    constraint cannot be resolved (all acceptable solutions have 0 probability),
+    constraint cannot be resolved (all acceptable solutions have zero probability),
     a variable value is not being randomized.
 
     Example:
@@ -157,11 +157,11 @@ class Randomized(object):
 
         Each constraint is associated with its arguments being random variables,
         which means for each random variable combination only one constraint of
-        the ``True``/``False`` type and one numeric may be defined
+        the ``True``/``False`` type and one numeric may be defined.
         The latter will overwrite the existing one.
 
         For example, when class has two random variables ``(x, y)``,
-        6 constraint functions may be defined: boolean and numeric constraints
+        six constraint functions may be defined: boolean and numeric constraints
         of ``x``, ``y`` and a pair ``(x, y)``.
 
         Args:
@@ -205,7 +205,7 @@ class Randomized(object):
         already resolved.
 
         Args:
-            orderedVars (str or list): Variables that are requested to be resolved in an specific order.
+            orderedVars (str or list): Variables that are requested to be resolved in the specified order.
 
         Example:
 
