@@ -1,23 +1,23 @@
-# Copyright (c) 2016-2018, TDK Electronics
+# Copyright (c) 2016-2019, TDK Electronics
 # All rights reserved.
 #
 # Author: Marek Cieplucha, https://github.com/mciepluc
 #
-# Redistribution and use in source and binary forms, with or without modification,
-# are permitted provided that the following conditions are met (The BSD 2-Clause
-# License):
+# Redistribution and use in source and binary forms, with or without 
+# modification, are permitted provided that the following conditions are met 
+# (The BSD 2-Clause License):
 #
 # 1. Redistributions of source code must retain the above copyright notice,
 # this list of conditions and the following disclaimer.
 #
 # 2. Redistributions in binary form must reproduce the above copyright notice,
-# this list of conditions and the following disclaimer in the documentation and/or
-# other materials provided with the distribution.
+# this list of conditions and the following disclaimer in the documentation 
+# and/or other materials provided with the distribution.
 #
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL POTENTIAL VENTURES LTD BE LIABLE FOR ANY
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+# ARE DISCLAIMED. IN NO EVENT SHALL POTENTIAL VENTURES LTD BE LIABLE FOR ANY
 # DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
 # (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
 # LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
@@ -25,7 +25,14 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-"""Constrained-random verification features."""
+"""
+Constrained-random verification features.
+
+Classes:
+
+* :class:`Randomized` - base class for randoimzed types.
+
+"""
 
 import random
 import inspect
@@ -36,31 +43,33 @@ from cocotb_coverage import constraint
 class Randomized(object):
     """Base class for randomized types.
 
-    The final class should contain defined random
-    variables using the :meth:`addRand()` method.
+    The final class should contain defined random variables using the 
+    :meth:`addRand()` method.
 
     Constraints may be added and deleted using the
     :meth:`addConstraint()` and :meth:`delConstraint()` methods respectively.
 
-    A constraint is an arbitrary function and may either return a ``True``/``False`` value
-    (*hard constraints*) or a numeric value, which may be interpreted as *soft
-    constraints* or *distribution functions*.
+    A constraint is an arbitrary function and may either return a 
+    ``True``/``False`` value (*hard constraints*) or a numeric value, which may
+    be interpreted as *soft constraints* or *distribution functions*.
 
-    Constraint function arguments must match final class attributes (random or not).
-    Constraints may have multiple random arguments for to multi-dimensional distributions.
+    Constraint function arguments (names) must match final class attributes 
+    (random or not). Constraints may have multiple random arguments which 
+    corresponds to multi-dimensional distributions.
 
-    The function :meth:`randomize()` performs a randomization for all random variables
-    meeting all defined  constraints.
+    The function :meth:`randomize()` performs a randomization for all random 
+    variables meeting all defined constraints.
 
-    The function :meth:`randomize_with()` performs a randomization using additional
-    constraint functions given in an argument.
+    The function :meth:`randomize_with()` performs a randomization using 
+    additional constraint functions given in an argument.
 
-    The functions :meth:`pre_randomize()` and :meth:`post_randomize()` are called
-    before and after :meth:`randomize` and should be overloaded in a final class if necessary.
+    The functions :meth:`pre_randomize()` and :meth:`post_randomize()` are 
+    called before and after :meth:`randomize` and should be overloaded in a 
+    final class if necessary.
 
-    If a hard constraint cannot be resolved, an exception is thrown. If a soft
-    constraint cannot be resolved (all acceptable solutions have 0 probability),
-    a variable value is not being randomized.
+    If hard constraint cannot be resolved, an exception is thrown. If soft
+    constraint cannot be resolved (all acceptable solutions have 0 
+    probability), then variable value is not being randomized.
 
     Example:
 
@@ -72,16 +81,20 @@ class Randomized(object):
     >>>       self.z = 0
     >>>
     >>>       # define y as a random variable taking values from 0 to 9
-    >>>       addRand(y, list(range(10)))
+    >>>       addRand("y", list(range(10)))
     >>>
     >>>       # define z as a random variable taking values from 0 to 4
-    >>>       addRand(z, list(range(5)))
+    >>>       addRand("z", list(range(5)))
     >>>
-    >>>       addConstraint(lambda x, y: x !=y)  # hard constraint
-    >>>       addConstraint(lambda y, z: y + z)  # multi-dimensional distribution
+    >>>       # hard constraint
+    >>>       addConstraint(lambda x, y: x !=y) 
+    >>>       # multi-dimensional distribution
+    >>>       addConstraint(lambda y, z: y + z) 
     >>>
-    >>> object = FinalRandomized(5)
-    >>> object.randomize_with(lambda z : z > 3)  # additional constraint to be applied
+    >>> # create randomized object instance (default values at this point)
+    >>> obj_ = FinalRandomized(5)
+    >>> # randomize object with additional contraint 
+    >>> obj_.randomize_with(lambda z : z > 3)  
 
     As generating constrained random objects may involve a lot of computations,
     it is recommended to limit random variables domains and use
@@ -118,13 +131,16 @@ class Randomized(object):
     def addRand(self, var, domain=None):
         """Add a random variable to the solver.
 
-        All random variables must be defined before adding any constraint with :meth:`addConstraint`.
-        Therefore it is highly recommended to call ``addRand`` in an ``__init__`` method.
+        All random variables must be defined before adding any constraint with 
+        :meth:`addConstraint`. Therefore it is highly recommended to call 
+        ``addRand`` in the ``__init__`` method of your final class.
 
         Args:
-            var (str): a variable name corresponding to the class member variable.
-            domain (list, optional): a list of all allowed values of the variable ``var``.
-                If ``None``, the list ``0`` to ``65535-1`` (16 bit unsigned int) is used.
+            var (str): a variable name corresponding to the class member 
+                variable.
+            domain (list, optional): a list of all allowed values of the 
+                variable ``var``. By default, a list with values ``0`` to 
+                ``65534`` (16 bit unsigned int domain) is used.
 
         Examples:
 
@@ -147,28 +163,29 @@ class Randomized(object):
         """Add a constraint function to the solver.
 
         A constraint may return ``True``/``False`` or a numeric value.
-        Constraint function arguments must be valid class member names (random or not).
-        Arguments must be listed in alphabetical order.
+        Constraint function arguments must be valid class member names (random 
+        or not). Arguments must be listed in alphabetical order.
 
-        Due to calculation complexity, it is recommended to
-        create as few constraints as possible and implement
-        :meth:`pre_randomize()`/:meth:`post_randomize()`
-        methods, or use the :meth:`solveOrder()` function.
+        Due to calculation complexity, it is recommended to create as few 
+        constraints as possible and implement
+        :meth:`pre_randomize()`/:meth:`post_randomize()` methods, or use the 
+        :meth:`solveOrder()` function.
 
-        Each constraint is associated with its arguments being random variables,
-        which means for each random variable combination only one constraint of
-        the ``True``/``False`` type and one numeric may be defined
-        The latter will overwrite the existing one.
+        Each constraint is associated with its arguments being random 
+        variables, which means for each random variable combination only one 
+        constraint of the ``True``/``False`` type and one numeric may be 
+        defined. The latter will overwrite the existing one.
 
-        For example, when class has two random variables ``(x, y)``,
-        6 constraint functions may be defined: boolean and numeric constraints
+        For example, when class has two random variables ``(x, y)``, 6
+        constraint functions may be defined: boolean and numeric constraints
         of ``x``, ``y`` and a pair ``(x, y)``.
 
         Args:
-            cstr: A constraint function.
+            cstr (func): a constraint function.
 
         Returns:
-            constraint or None: an overwritten constraint or ``None`` if no overwrite happened (optional).
+            func or None: an overwritten constraint or ``None`` if no 
+            overwrite happened.
 
         Examples:
 
@@ -181,14 +198,17 @@ class Randomized(object):
         >>> # distribution (highest probability density at the boundaries):
         >>> addConstraint(lambda data : abs(64 - data))
         >>>
-        >>> # hard constraint of multiple variables (some of them may be non-random):
+        >>> # hard constraint of multiple variables (some of them may be 
+        >>> # non-random):
         >>> addConstraint(lambda x,y,z : x + y + z == 0)
         >>>
-        >>> # soft constraint created by applying low probability density for some solutions:
+        >>> # soft constraint created by applying low probability density for 
+        >>> # some solutions:
         >>> addConstraint(
-        >>>     lambda delay, size : 0.01 if (size < 5 & delay == "medium") else 1
+        >>>  lambda delay, size : 0.01 if (size < 5 & delay == "medium") else 1
         >>> )
-        >>> # this constraint will overwrite the previously defined (data < 128)
+        >>> # constraint that overwrites the previously defined one
+        >>> # (data < 128)
         >>> addConstraint(lambda data : data < 256)
         """
 
@@ -198,30 +218,31 @@ class Randomized(object):
     def solveOrder(self, *orderedVars):
         """Define an order of the constraints resolving.
 
-        May contain variable names or lists with variable names.
-        Constraints are resolved in a given
-        order, which means for implicit constraint and distribution functions,
-        they may be treated as simple ones, as one some variables could be
-        already resolved.
+        Constraints are being resolved in a given order, which means that 
+        randomization is called in separated steps, where at each next step
+        some constraints are already resolved. Number of arguments defines 
+        number of the randomization steps.
 
         Args:
-            orderedVars (str or list): Variables that are requested to be resolved in an specific order.
+            *orderedVars (multiple str or list): Variables that are requested 
+                to be resolved in an specific order.
 
         Example:
 
-        >>> addRand(x, list(range(0,10)))
-        >>> addRand(y, list(range(0,10)))
-        >>> addRand(z, list(range(0,10)))
-        >>> addRand(w, list(range(0,10)))
+        >>> addRand("x", list(range(0,10)))
+        >>> addRand("y", list(range(0,10)))
+        >>> addRand("z", list(range(0,10)))
+        >>> addRand("w", list(range(0,10)))
         >>> addConstraint(lambda x, y : x + y = 9)
         >>> addConstraint(lambda z : z < 5)
         >>> addConstraint(lambda w : w > 5)
         >>>
-        >>> solveOrder(["x", "z"], "y"]
-        >>> # In a first step, "z", "x" and "w" will be resolved, which means only
-        >>> # the second and third constraint will be applied. In a second step, the first
-        >>> # constraint will be resolved as it was requested to solve "y" after "x"
-        >>> # and "z". "x" will be treated as a constant in this case.
+        >>> solveOrder(["x", "z"], "y")
+        >>> # In a first step, "z", "x" and "w" will be resolved, which means 
+        >>> # only the second and third constraint will be applied. In a second 
+        >>> # step, the first constraint will be resolved as it was requested 
+        >>> # to solve "y" after "x" and "z". "x" will be interpreted as a 
+        >>> # constant in this case.
         """
         self._solveOrder = []
         for selRVars in orderedVars:
@@ -234,7 +255,7 @@ class Randomized(object):
         """Delete a constraint function.
 
         Args:
-            cstr: A constraint function.
+            cstr (func): a constraint function.
 
         Example:
 
@@ -243,14 +264,16 @@ class Randomized(object):
         return self._delConstraint(cstr, self._randVariables)
 
     def pre_randomize(self):
-        """A function that is called before :meth:`randomize`/:meth:`randomize_with`.
+        """A function that is called before 
+        :meth:`randomize`/:meth:`randomize_with`.
 
         To be overridden in a final class if used.
         """
         pass
 
     def post_randomize(self):
-        """A function that is called after :meth:`randomize`/:meth:`randomize_with`.
+        """A function that is called after 
+        :meth:`randomize`/:meth:`randomize_with`.
 
         To be overridden in a final class if used.
         """
@@ -264,6 +287,11 @@ class Randomized(object):
         """Randomize a final class using the additional constraints given.
 
         Additional constraints may override existing ones.
+
+        Args:
+            *constraints ((multiple) func): additional constraints to be 
+                applied.
+
         """
         overwritten_constrains = []
 
@@ -303,8 +331,8 @@ class Randomized(object):
                 "Variables of a constraint function must be defined in \
                 alphabetical order"
 
-            # determine the function type... rather unpythonic but necessary for
-            # distinction between a constraint and a distribution
+            # determine the function type... rather unpythonic but necessary 
+            # for distinction between a constraint and a distribution
             callargs = []
             rand_variables = []
             for var in variables:
@@ -372,9 +400,11 @@ class Randomized(object):
 
 
     def _randomize(self):
-        """Call :meth:`_resolve` and :meth:`pre_randomize`/:meth:`post_randomize`
-        functions with respect to defined variables resolving order.
+        """Call :meth:`_resolve` and 
+        :meth:`pre_randomize`/:meth:`post_randomize` functions with respect to 
+        defined variables resolving order.
         """
+
         self.pre_randomize()
         if not self._solveOrder:
             #call _resolve for all random variables
@@ -544,7 +574,8 @@ class Randomized(object):
         # Cartesian product of above
         ducSolutions = list(itertools.product(*ducDomains))
 
-        # merge solutions: constrained ones and all possible distribution values
+        # merge solutions: constrained ones and all possible distribution 
+        # values
         for sol in solutions:
             for ducsol in ducSolutions:
                 dsol = dict(sol)
@@ -586,7 +617,8 @@ class Randomized(object):
                             f_sd_callvals.append(dsol[f_sd_arg])
                         else:  # get as non-random variable
                             f_sd_callvals.append(getattr(self, f_sd_arg))
-                    # update weight of the solution - call distribution function
+                    # update weight of the solution - call distribution 
+                    # function
                     weight = weight * f_sdstr(*f_sd_callvals)
             if (weight > 0.0):
                 dsolution_weights.append(weight)

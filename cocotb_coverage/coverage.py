@@ -1,23 +1,23 @@
-# Copyright (c) 2016-2018, TDK Electronics
+# Copyright (c) 2016-2019, TDK Electronics
 # All rights reserved.
-# 
+#
 # Author: Marek Cieplucha, https://github.com/mciepluc
-# 
-# Redistribution and use in source and binary forms, with or without modification, 
-# are permitted provided that the following conditions are met (The BSD 2-Clause 
-# License):
-# 
-# 1. Redistributions of source code must retain the above copyright notice, 
+#
+# Redistribution and use in source and binary forms, with or without 
+# modification, are permitted provided that the following conditions are met 
+# (The BSD 2-Clause License):
+#
+# 1. Redistributions of source code must retain the above copyright notice,
 # this list of conditions and the following disclaimer.
-# 
-# 2. Redistributions in binary form must reproduce the above copyright notice, 
-# this list of conditions and the following disclaimer in the documentation and/or 
-# other materials provided with the distribution.
-# 
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL POTENTIAL VENTURES LTD BE LIABLE FOR ANY
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+# this list of conditions and the following disclaimer in the documentation 
+# and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+# ARE DISCLAIMED. IN NO EVENT SHALL POTENTIAL VENTURES LTD BE LIABLE FOR ANY
 # DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
 # (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
 # LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
@@ -30,16 +30,17 @@ Functional Coverage features.
 
 Classes:
 
-* :class:`CoverItem` - coverage base class, corresponds to a covergroup, created automatically
-* :class:`CoverPoint` - a cover point with bins
-* :class:`CoverCross` - a cover cross with references to :class:`CoverPoint`
-* :class:`CoverCheck` - a cover point which checks only a pass/fail condition
+* :class:`CoverItem` - base class for coverage, corresponds to a covergroup, 
+  created automatically.
+* :class:`CoverPoint` - a cover point with bins.
+* :class:`CoverCross` - a cover cross of cover points.
+* :class:`CoverCheck` - a cover point which checks only a pass/fail condition.
 
 Functions:
 
-* :func:`~.reportCoverage` - prints coverage
+* :func:`~.reportCoverage` - prints coverage.
 * :func:`~.coverageSection` - allows for convenient definition of multiple
-  coverage items and combines them into a single decorator
+  coverage items and combines them into a single decorator.
 """
 
 from functools import wraps
@@ -49,13 +50,21 @@ import operator
 import itertools
 
 # global variable collecting coverage in a prefix tree (trie)
-coverage_db = {}  #: a coverage prefix tree (map) containing all coverage objects with name string as a key
+#TODO make it a singletone class
+coverage_db = {}  
+"""
+: a coverage prefix tree (map) containing all coverage objects with name string
+as a key (using dot as a stage separator).
+"""
 
 
 class CoverItem(object):
     """Class used to describe coverage groups.
 
-    ``CoverItem`` objects are created automatically. 
+    ``CoverItem`` objects are created automatically. This is a base class for
+    all coverage primitives (:class:`CoverPoint`, :class:`CoverCross` or
+    :class:`CoverCheck`). It may be used as a base class for other, 
+    user-defined coverage types. 
     """
 
     def __init__(self, name):
@@ -64,6 +73,7 @@ class CoverItem(object):
         self._coverage = 0
         self._parent = None
         self._children = []
+        self._new_hits = []
 
         self._threshold_callbacks = {}
         self._bins_callbacks = {}
@@ -80,6 +90,8 @@ class CoverItem(object):
         coverage_db[name] = self
 
     def _update_coverage(self, coverage):
+        """Update the parent coverage level as requested by derived classes. 
+        """
         current_coverage = self._coverage
         self._coverage += coverage
         if self._parent is not None:
@@ -92,73 +104,163 @@ class CoverItem(object):
                 self._threshold_callbacks[ii]()
 
     def _update_size(self, size):
+        """Update the parent size as requested by derived classes. 
+        """
         self._size += size
         if self._parent is not None:
             self._parent._update_size(size)
 
     def add_threshold_callback(self, callback, threshold):
+        """Add a threshold callback to the :class:`CoverItem` or any its 
+        derived class. 
+
+        A callback is called (once) when the threshold is crossed, so that 
+        coverage level of this particular cover group (or other object) exceeds 
+        defined % value. 
+
+        Args:
+            callback (func): a callback function.
+            threshold (int): a callback call threshold (% coverage). 
+
+        Examples:
+
+        >>> def notify_threshold():
+        >>>     print("reached 50% coverage!")
+        >>>
+        >>> # add callback to the cover group
+        >>> coverage_db["top.covergroup1"].add_threshold_callback(
+        >>>   notify_threshold, 50
+        >>> )
+        >>> # add callback to the cover point
+        >>> coverage_db["top.covergroup1.coverpoint4"].add_threshold_callback(
+        >>>   notify_threshold, 50
+        >>> )
+        """
         self._threshold_callbacks[threshold] = callback
 
     def add_bins_callback(self, callback, bins):
+        """Add a bins callback to the derived class of the :class:`CoverItem`.
+
+        A callback is called (once) when a specific bin is covered. 
+
+        Args:
+            callback (func): a callback function.
+            bins: a particular bin (type depends on bins type). 
+
+        Examples:
+
+        >>> def notify_bins():
+        >>>     print("covered bin 'special case'")
+        >>>
+        >>> coverage_db["top.covergroup1.coverpoint5"].add_bins_callback(
+        >>>   notify_bins, 'special case'
+        >>> )
+        """
         self._bins_callbacks[bins] = callback
 
     @property
     def size(self):
-        """FIXME"""
+        """Return size of the coverage primitive.
+
+        Size of the cover group (or other coverage primitive) is returned. This
+        is a total number of bins associated with assigned weights. 
+
+        Returns:
+            int: size of the coverage primitive.
+        """
         return self._size
 
     @property
     def coverage(self):
-        """FIXME"""
+        """Return size of the covered bins in the coverage primitive.
+
+        Number of the covered bins in cover group (or other coverage primitive) 
+        is returned. This is a number of covered bins associated with assigned 
+        weights. 
+
+        Returns:
+            int: size of the covered bins.
+        """
         return self._coverage
 
     @property
     def cover_percentage(self):
-        """FIXME"""
-        return 100 * self._coverage / self._size
+        """Return coverage level of the coverage primitive.
+
+        Percent of the covered bins in cover group (or other coverage 
+        primitive) is returned. This is basically a :meth:`coverage()` divided
+        by :meth:`size()` in %.
+
+        Returns:
+            float: percent of the coverage.
+        """
+        return 100 * self.coverage / self.size
 
     @property
     def detailed_coverage(self):
-        """FIXME"""
-        coverage = []
+        """Return detailed coverage - full list of bins associated with number
+        of hits. 
+
+        A dictionary (bins) -> (number of hits) is returned. 
+
+        Returns:
+            dict: dictionary associating number of hits with a particular bins.
+        """
+        coverage = {}
         for child in self._children:
             coverage.append(child.detailed_coverage)
         return coverage
+
+    @property
+    def new_hits(self):
+        """Return bins hit at last sampling event. Works only for objects 
+        deriving from :class:`CoverItem`.
+
+        Returns:
+            list: list of the new bins (which have not been already covered)
+            sampled at last sampling event.
+        """        
+        return self._new_hits
 
 
 class CoverPoint(CoverItem):
     """Class used to create coverage points as decorators. 
 
-    Sampling matches predefined bins according to the rule
-        ``rel(xf(args), bin) == True``
-
+    This decorator samples members of the decorated function (its signature). 
+    Sampling matches predefined bins according to the rule:
+    ``rel(xf(args), bin) == True``
+    
     Args:
-        name (str): a ``CoverPoint`` path and name, defining its position in a coverage trie.
-        vname (str, optional): a name of the variable to be covered (use this only when
-            covering a *single* variable).
-        xf (optional): a transformation function which transforms arguments of the 
-            decorated function.
-            If ``vname`` and ``xf`` are not defined, matched is a single input argument (if only 
-            one exists) or a tuple (if multiple exist).
-            Note that the ``self`` argument is *always* removed from the argument list. 
-        bins (list): a list of bins objects to be matched
-        rel (optional): a relation function which defines bins matching relation (by 
-            default, the equality operator ``==``).
-        weight (optional): a ``CoverPoint`` weight (by default ``1``).
-        at_least (int, optional): the number of hits per bin to be considered as 
-            covered (by default ``1``).
-        inj (bool, optional): "inkection", defines if more than single bin can be matched 
-            at one sampling (default ``False``).
+        name (str): a ``CoverPoint`` path and name, defining its position in a 
+            coverage trie.
+        vname (str, optional): a name of the variable to be covered (use this 
+            only when covering a *single* variable in the decorated function
+            signature).
+        xf (func, optional): a transformation function which transforms 
+            arguments of the decorated function. If ``vname`` and ``xf`` are 
+            not defined, matched is a single input argument (if only one 
+            exists) or a tuple (if multiple exist). Note that the ``self`` 
+            argument is *always* removed from the argument list. 
+        bins (list): a list of bins objects to be matched. Note that for 
+            non-trivial types, a ``rel`` must always be defined (or equality 
+            operator must be overloaded).
+        rel (func, optional): a relation function which defines bins matching 
+            relation (by default, the equality operator ``==``).
+        weight (int, optional): a ``CoverPoint`` weight (by default ``1``).
+        at_least (int, optional): the number of hits per bins to be considered 
+            as covered (by default ``1``).
+        inj (bool, optional): "injection" feature, defines if more than single 
+            bin can be matched at one sampling (default ``False``).
 
     Example:
 
-    >>> @coverage.CoverPoint(  # covers (arg/2) < 1...5 (5 bins)
+    >>> @coverage.CoverPoint( # cover (arg/2) < 1...5 (5 bins)
     ...     name = "top.parent.coverpoint1", 
     ...     xf = lambda x : x/2, 
     ...     rel = lambda x, y : x < y, 
     ...     bins = list(range(1, 5))
     ... )
-    >>> @coverage.CoverPoint(  # covers (arg) == 1...5 (5 bins)
+    >>> @coverage.CoverPoint( # cover (arg) == 1...5 (5 bins)
     ...     name = "top.parent.coverpoint2", 
     ...     vname = "arg",
     ...     bins = list(range(1, 5))
@@ -166,28 +268,29 @@ class CoverPoint(CoverItem):
     >>> def decorated_fun1(self, arg):
     ...     ...
 
-    >>> @coverage.CoverPoint(  # covers (arg1, arg2) == (1, 1) or (0, 0) (2 bins)
+    >>> @coverage.CoverPoint( # cover (arg1, arg2) == (1, 1) or (0, 0) (2 bins)
     ...     name = "top.parent.coverpoint3", 
     ...     bins = [(1, 1), (0, 0)]
     ... )
-    >>> def decorated_fun1(self, arg1, arg2):
+    >>> def decorated_fun2(self, arg1, arg2):
     ...     ...
     """
 
     # conditional Object creation, only if name not already registered
-    def __new__(cls, name, vname = None, xf=None, rel=None, bins=[], weight=1, at_least=1, 
-                inj=False):
+    def __new__(cls, name, vname = None, xf=None, rel=None, bins=[], weight=1, 
+                at_least=1, inj=False):
         if name in coverage_db:
             return coverage_db[name]
         else:
             return super(CoverPoint, cls).__new__(CoverPoint)
 
-    def __init__(self, name, vname = None, xf=None, rel=None, bins=[], weight=1, at_least=1, 
-                 inj=False):
+    def __init__(self, name, vname = None, xf=None, rel=None, bins=[], 
+                 weight=1, at_least=1, inj=False):
         if not name in coverage_db:
             CoverItem.__init__(self, name)
             if self._parent is None:
-                raise Exception("CoverPoint must have a parent (parent.CoverPoint)")
+                raise Exception("CoverPoint must have a parent \
+                                 (parent.CoverPoint)")
 
             self._transformation = xf
             self._vname = vname
@@ -226,7 +329,8 @@ class CoverPoint(CoverItem):
                             return cb_args
                         else:
                             return cb_args[0]
-                else: #if vname defined, match it to the decroated function args
+                # if vname defined, match it to the decroated function args
+                else: 
                     arg_names = list(inspect.signature(f).parameters)
                     idx = arg_names.index(self._vname)
                     def dummy_f(*cb_args):
@@ -240,7 +344,8 @@ class CoverPoint(CoverItem):
                 for x in inspect.getmembers(cb_args[0]):
                     if '__func__' in dir(x[1]):
                         # compare decorated function name with class functions
-                        self._decorates_method = f.__name__ == x[1].__func__.__name__
+                        self._decorates_method = \
+                          f.__name__ == x[1].__func__.__name__
                         if self._decorates_method:
                             break
 
@@ -296,48 +401,44 @@ class CoverPoint(CoverItem):
     def detailed_coverage(self):
         return self._hits
 
-    @property
-    def new_hits(self):
-        return self._new_hits
-
-
 class CoverCross(CoverItem):
     """Class used to create coverage crosses as decorators.
 
-    It matches tuples cross-bins which are Cartesian products of bins defined in 
-    :class:`CoverPoints <CoverPoint>` (items).
+    This decorator samples members of the decorated function (its signature). 
+    It matches tuples cross-bins which are Cartesian products of bins defined 
+    in :class:`CoverPoints <CoverPoint>` (items).
 
     Args:
-        name (str): a CoverCross path and name, defining its position in a coverage trie.
+        name (str): a ``CoverCross`` path and name, defining its position in a 
+            coverage trie.
         items (list): a list of :class:`CoverPoints <CoverPoint>` by names, 
             to create a Cartesian product of cross-bins.
         ign_bins (list, optional): a list of bins to be ignored.
-        weight (optional): a CoverCross weight (by default ``1``).
-        at_least (int, optional): defines number of hits per bin to be considered as 
-            covered (by default ``1``).
+        weight (int, optional): a ``CoverCross`` weight (by default ``1``).
+        at_least (int, optional): the number of hits per bins to be considered 
+            as covered (by default ``1``).
 
     Example:
 
     >>> @coverage.CoverPoint(
     ...     name = "top.parent.coverpoint1", 
     ...     xf = lambda x, y: x, 
-    ...     bins = range(1, 5)
+    ...     bins = range(1, 5) # 5 bins in total
     ... )
     >>> @coverage.CoverPoint(
     ...     name = "top.parent.coverpoint2",
     ...     xf = lambda x, y: y, 
-    ...     bins = range(1, 5)
+    ...     bins = range(1, 5) # 5 bins in total
     ... )
     >>> @coverage.CoverCross(
     ...     name = "top.parent.covercross", 
     ...     items = ["top.parent.coverpoint1", "top.parent.coverpoint2"],
-    ...     ign_bins = [(1, 1), (5, 5)],
+    ...     ign_bins = [(1, 1), (5, 5)], # 5x5 - 2 = 23 bins in total
     ... )
     >>> def decorated_fun(self, arg_a, arg_b):
+    >>> # bin from the bins list [(1, 2), (1, 3)...(5, 4)] will be matched 
+    >>> # when a tuple (x=arg_a, y=arg_b) sampled at this function call.
     ...     ...
-
-    Bin from the bins list ``[(1, 2), (1, 3)...(5, 4)]`` will be matched when a tuple 
-    ``(x=arg_a, y=arg_b)`` sampled at ``decorated_fun`` call.
     """
 
     # conditional Object creation, only if name not already registered
@@ -351,7 +452,9 @@ class CoverCross(CoverItem):
         if not name in coverage_db:
             CoverItem.__init__(self, name)
             if self._parent is None:
-                raise Exception("CoverCross must have a parent (parent.CoverCross)")
+                raise Exception("CoverCross must have a parent \
+                                 (parent.CoverCross)")
+
             self._weight = weight
             self._at_least = at_least
             # equality operator is the defult ignore bins matching relation
@@ -427,17 +530,19 @@ class CoverCheck(CoverItem):
     """Class used to create coverage checks as decorators. 
 
     It is a simplified :class:`CoverPoint` with defined 2 bins:
-    "PASS" and "FAIL" and ``f_pass()`` and ``f_fail()`` functions. 
+    *PASS* and *FAIL* and ``f_pass()`` and ``f_fail()`` functions. 
  
     Args:
-        name: a CoverCheck path and name, defining its position in a coverage trie.
-        f_fail: a failure function, if returned ``True``, a coverage level is set 0% 
-            permanently.
-        f_pass: a pass function, if returned ``True`` coverage level is set 100% after 
-            ``at_least`` hits.
+        name (str): a ``CoverCheck`` path and name, defining its position in a 
+            coverage trie.
+        f_fail: a failure condition function, if returned ``True`` anytime, a 
+            coverage level is set to ``0`` permanently.
+        f_pass: a pass condition function, if returned ``True``, coverage level 
+            is set to ``weight`` after ``at_least`` hits. 
         weight (optional): a CoverCheck weight (by default ``1``).
-        at_least (int, optional) defines how many times ``f_pass``` needs to be satisfied 
-            (by default ``1``).
+        weight (int, optional): a ``CoverCheck`` weight (by default ``1``).
+        at_least (int, optional): the number of hits of the ``f_pass`` function 
+            to consider a particular ``CoverCheck`` as covered. 
 
     Example:
 
@@ -446,11 +551,11 @@ class CoverCheck(CoverItem):
     ...     f_fail = lambda x : x == 0, 
     ...     f_pass = lambda x : x < 5)
     >>> def decorated_fun(self, arg):
+    >>> # CoverCheck is 100% covered when sampled (arg < 5) and never sampled 
+    >>> # (arg == 0). Coverage is set 0 unconditionally when at least once 
+    >>> # sampled (arg == 0).
     ...     ...
 
-    A CoverCheck is satisfied (100% covered) when sampled ``arg < 5`` and never 
-    ``sampled arg == 0``.
-    A CoverCheck is failed (0% covered) when at least once sampled ``arg == 0``.
     """
     
     # conditional Object creation, only if name not already registered
@@ -464,7 +569,8 @@ class CoverCheck(CoverItem):
         if not name in coverage_db:
             CoverItem.__init__(self, name)
             if self._parent is None:
-                raise Exception("CoverCheck must have a parent (parent.CoverCheck)")
+                raise Exception("CoverCheck must have a parent \
+                                 (parent.CoverCheck)")
             self._weight = weight
             self._at_least = at_least
             self._f_pass = f_pass
@@ -561,9 +667,15 @@ class CoverCheck(CoverItem):
     def detailed_coverage(self):
         return self._hits
 
-
+#TODO maybe it's better to associate this function with coverage_db singleton 
 def reportCoverage(logger, bins=False):
-    """Print sorted coverage with optional bins details."""
+    """Print sorted coverage with optional bins details.
+
+    Args:
+        logger (func): a logger object.
+        bins (bool): print bins details.
+
+    """
     sorted_cov = sorted(coverage_db, key=str.lower)
     for ii in sorted_cov:
         logger("   " * ii.count('.') + "%s : %s, coverage=%d, size=%d " % (
@@ -585,14 +697,19 @@ def reportCoverage(logger, bins=False):
 def coverageSection(*coverItems):
     """Combine multiple coverage items into a single decorator.
 
+    Args:
+        *coverItems ((multiple) :class:`CoverItem`): coverage primitives to be
+            combined.
+
     Example:
 
     >>> my_coverage = coverage.coverageSection(
-    ...     coverage.CoverItem("x", ...),
-    ...     coverage.CoverItem("y", ...),
+    ...     coverage.CoverPoint("x", ...),
+    ...     coverage.CoverPoint("y", ...),
+    ...     coverage.CoverCross("z", ...),
     ...     ...
     ... )
-
+    >>>
     >>> @my_coverage
     >>> def decorated_fun(self, arg):
     ...     ...
