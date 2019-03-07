@@ -8,10 +8,10 @@ The implemented funcionality is intended to be easily understandable by SystemVe
 References:
 * cocotb core package - [cocotb](https://github.com/potentialventures/cocotb)
 * Constraint Solving Problem resolver used in this project - [python-constraint](https://github.com/python-constraint/python-constraint)
-* [Documentation](https://cocotb-coverage.readthedocs.io/en/latest/) 
+* [documentation](https://cocotb-coverage.readthedocs.io/en/latest/) 
 * DVCon 2017 Paper - [New Constrained Random and MDV Methodology using Python](http://events.dvcon.org/2017/proceedings/papers/02_3.pdf)
 * DVCon 2017 Presentation - [SLIDES](http://events.dvcon.org/2017/proceedings/slides/02_3.pdf)
-* Example Advanced Project - [APB_I2C Cocotb Example](https://github.com/mciepluc/apbi2c_cocotb_example)
+* example advanced verification project - [apbi2c_cocotb_example](https://github.com/mciepluc/apbi2c_cocotb_example)
 
 Simple example below:
 ```Python
