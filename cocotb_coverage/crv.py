@@ -38,7 +38,8 @@ import random
 import inspect
 import itertools
 
-from cocotb_coverage import constraint
+# python-constraint is an external pip-installable package used here
+import constraint
 
 class Randomized(object):
     """Base class for randomized types.

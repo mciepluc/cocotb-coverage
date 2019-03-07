@@ -56,7 +56,7 @@ class TestCRV(unittest.TestCase):
         print("Running test_simple_0")
         
         size_hits = []
-        for _ in range(10):
+        for _ in range(20):
             a = self.SimpleRandomized(0, 0)
             a.randomize()
             self.assertTrue(a.x < a.y)
@@ -136,7 +136,7 @@ class TestCRV(unittest.TestCase):
                   (x.delay1, x.delay2, x.delay3, x.data))
             self.assertTrue(x.delay1 <= x.delay2) # check if c1 still works
             self.assertTrue(x.data < 50)  # check if c5 applies
-            self.assertTrue(x.data > 10)  # check if c3 applies
+            self.assertTrue(x.data >= 10)  # check if c3 applies
 
     #test if a constraint may be added an then deleted
     def test_deleting_constraints(self):
