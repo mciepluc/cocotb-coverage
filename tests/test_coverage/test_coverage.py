@@ -1,7 +1,7 @@
 
 import cocotb
 import unittest
-import crv_unittest
+import coverage_unittest
 from cocotb.triggers import Timer
 
 @cocotb.test()

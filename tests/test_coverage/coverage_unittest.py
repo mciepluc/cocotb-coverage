@@ -54,8 +54,16 @@ class TestCoverage(unittest.TestCase):
         self.assertTrue(coverage.coverage_db["t1.c1"].size == 10) 
         #expect all covered
         self.assertTrue(coverage.coverage_db["t1.c1"].coverage == 10)
+        #expect 100%
+        self.assertTrue(coverage.coverage_db["t1.c1"].cover_percentage == 100)
         #expect something covered
         self.assertTrue(0 < coverage.coverage_db["t1.c2"].coverage < 10)
+
+        #expect each bin hit only once
+        for i in range(10):
+            self.assertTrue(coverage.coverage_db["t1.c1"].detailed_coverage[i] == 1)
+
+        coverage.reportCoverage(print, bins=False)
 
     class FooBar():
         def __init__(self):
@@ -72,12 +80,21 @@ class TestCoverage(unittest.TestCase):
         fb = self.FooBar()
         self.assertTrue(coverage.coverage_db["t2.in_class"].size == 2) 
         self.assertTrue(coverage.coverage_db["t2.in_class"].coverage == 0) 
+        self.assertTrue(coverage.coverage_db["t2.in_class"].detailed_coverage["foo"] == 0) 
+        self.assertTrue(coverage.coverage_db["t2.in_class"].detailed_coverage["bar"] == 0) 
         fb.cover("bar")
-        self.assertTrue(coverage.coverage_db["t2.in_class"].coverage == 1) 
+        self.assertTrue(coverage.coverage_db["t2.in_class"].coverage == 1)
+        self.assertTrue(coverage.coverage_db["t2.in_class"].detailed_coverage["foo"] == 0) 
+        self.assertTrue(coverage.coverage_db["t2.in_class"].detailed_coverage["bar"] == 1) 
         fb.cover("bar")
-        self.assertTrue(coverage.coverage_db["t2.in_class"].coverage == 1) 
+        self.assertTrue(coverage.coverage_db["t2.in_class"].coverage == 1)
+        self.assertTrue(coverage.coverage_db["t2.in_class"].detailed_coverage["foo"] == 0) 
+        self.assertTrue(coverage.coverage_db["t2.in_class"].detailed_coverage["bar"] == 2)  
         fb.cover("foo")
         self.assertTrue(coverage.coverage_db["t2.in_class"].coverage == 2) 
+        self.assertTrue(coverage.coverage_db["t2.in_class"].detailed_coverage["foo"] == 1) 
+        self.assertTrue(coverage.coverage_db["t2.in_class"].detailed_coverage["bar"] == 2) 
+      
 
     #injective coverpoint - matching multiple bins at once
     def test_injective_coverpoint(self):
@@ -101,7 +118,7 @@ class TestCoverage(unittest.TestCase):
 
     #cross
     def test_covercross(self):
-        print("Running test_simple_coverpoint")
+        print("Running test_covercross")
 
         for i in range(10):
             @coverage.CoverPoint("t4.c1", vname="x1", bins = list(range(10)))
