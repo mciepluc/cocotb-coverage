@@ -37,6 +37,7 @@ Classes:
 import random
 import inspect
 import itertools
+import warnings
 
 # python-constraint is an external pip-installable package used here
 import constraint
@@ -45,10 +46,10 @@ class Randomized(object):
     """Base class for randomized types.
 
     The final class should contain defined random variables using the 
-    :meth:`addRand()` method.
+    :meth:`add_rand()` method.
 
     Constraints may be added and deleted using the
-    :meth:`addConstraint()` and :meth:`delConstraint()` methods respectively.
+    :meth:`add_constraint()` and :meth:`del_constraint()` methods respectively.
 
     A constraint is an arbitrary function and may either return a 
     ``True``/``False`` value (*hard constraints*) or a numeric value, which may
@@ -82,15 +83,15 @@ class Randomized(object):
     >>>       self.z = 0
     >>>
     >>>       # define y as a random variable taking values from 0 to 9
-    >>>       addRand("y", list(range(10)))
+    >>>       add_rand("y", list(range(10)))
     >>>
     >>>       # define z as a random variable taking values from 0 to 4
-    >>>       addRand("z", list(range(5)))
+    >>>       add_rand("z", list(range(5)))
     >>>
     >>>       # hard constraint
-    >>>       addConstraint(lambda x, y: x !=y) 
+    >>>       add_constraint(lambda x, y: x !=y) 
     >>>       # multi-dimensional distribution
-    >>>       addConstraint(lambda y, z: y + z) 
+    >>>       add_constraint(lambda y, z: y + z) 
     >>>
     >>> # create randomized object instance (default values at this point)
     >>> obj_ = FinalRandomized(5)
@@ -127,14 +128,14 @@ class Randomized(object):
         self._simpleDistributions = {}
 
         # list of lists containing random variables solving order
-        self._solveOrder = []
+        self._solve_order = []
 
-    def addRand(self, var, domain=None):
+    def add_rand(self, var, domain=None):
         """Add a random variable to the solver.
 
         All random variables must be defined before adding any constraint with 
-        :meth:`addConstraint`. Therefore it is highly recommended to call 
-        ``addRand`` in the ``__init__`` method of your final class.
+        :meth:`add_constraint`. Therefore it is highly recommended to call 
+        ``add_rand`` in the ``__init__`` method of your final class.
 
         Args:
             var (str): a variable name corresponding to the class member 
@@ -145,8 +146,8 @@ class Randomized(object):
 
         Examples:
 
-        >>> addRand("data", list(range(1024)))
-        >>> addRand("delay", ["small", "medium", "high"])
+        >>> add_rand("data", list(range(1024)))
+        >>> add_rand("delay", ["small", "medium", "high"])
         """
         assert (not (self._simpleConstraints or
                      self._implConstraints or
@@ -160,7 +161,7 @@ class Randomized(object):
 
         self._randVariables[var] = domain  # add a variable to the map
 
-    def addConstraint(self, cstr):
+    def add_constraint(self, cstr):
         """Add a constraint function to the solver.
 
         A constraint may return ``True``/``False`` or a numeric value.
@@ -170,7 +171,7 @@ class Randomized(object):
         Due to calculation complexity, it is recommended to create as few 
         constraints as possible and implement
         :meth:`pre_randomize()`/:meth:`post_randomize()` methods, or use the 
-        :meth:`solveOrder()` function.
+        :meth:`solve_order()` function.
 
         Each constraint is associated with its arguments being random 
         variables,which means for each random variable combination only one 
@@ -193,30 +194,30 @@ class Randomized(object):
         >>> def highdelay_cstr(delay):
         >>>     return delay == "high"
         >>>
-        >>> addConstraint(highdelay_cstr)  # hard constraint
-        >>> addConstraint(lambda data : data < 128)  # hard constraint
+        >>> add_constraint(highdelay_cstr)  # hard constraint
+        >>> add_constraint(lambda data : data < 128)  # hard constraint
         >>>
         >>> # distribution (highest probability density at the boundaries):
-        >>> addConstraint(lambda data : abs(64 - data))
+        >>> add_constraint(lambda data : abs(64 - data))
         >>>
         >>> # hard constraint of multiple variables (some of them may be 
         >>> # non-random):
-        >>> addConstraint(lambda x,y,z : x + y + z == 0)
+        >>> add_constraint(lambda x,y,z : x + y + z == 0)
         >>>
         >>> # soft constraint created by applying low probability density for 
         >>> # some solutions:
-        >>> addConstraint(
+        >>> add_constraint(
         >>>  lambda delay, size : 0.01 if (size < 5 & delay == "medium") else 1
         >>> )
         >>> # constraint that overwrites the previously defined one
         >>> # (data < 128)
-        >>> addConstraint(lambda data : data < 256)
+        >>> add_constraint(lambda data : data < 256)
         """
 
         # just add constraint considering all random variables
-        return self._addConstraint(cstr, self._randVariables)
+        return self._add_constraint(cstr, self._randVariables)
 
-    def solveOrder(self, *orderedVars):
+    def solve_order(self, *orderedVars):
         """Define an order of the constraints resolving.
 
         Constraints are being resolved in a given order, which means that 
@@ -230,29 +231,29 @@ class Randomized(object):
 
         Example:
 
-        >>> addRand("x", list(range(0,10)))
-        >>> addRand("y", list(range(0,10)))
-        >>> addRand("z", list(range(0,10)))
-        >>> addRand("w", list(range(0,10)))
-        >>> addConstraint(lambda x, y : x + y = 9)
-        >>> addConstraint(lambda z : z < 5)
-        >>> addConstraint(lambda w : w > 5)
+        >>> add_rand("x", list(range(0,10)))
+        >>> add_rand("y", list(range(0,10)))
+        >>> add_rand("z", list(range(0,10)))
+        >>> add_rand("w", list(range(0,10)))
+        >>> add_constraint(lambda x, y : x + y = 9)
+        >>> add_constraint(lambda z : z < 5)
+        >>> add_constraint(lambda w : w > 5)
         >>>
-        >>> solveOrder(["x", "z"], "y")
+        >>> solve_order(["x", "z"], "y")
         >>> # In a first step, "z", "x" and "w" will be resolved, which means 
         >>> # only the second and third constraint will be applied. In a second 
         >>> # step, the first constraint will be resolved as it was requested 
         >>> # to solve "y" after "x" and "z". "x" will be interpreted as a 
         >>> # constant in this case.
         """
-        self._solveOrder = []
+        self._solve_order = []
         for selRVars in orderedVars:
             if type(selRVars) is not list:
-                self._solveOrder.append([selRVars])
+                self._solve_order.append([selRVars])
             else:
-                self._solveOrder.append(selRVars)
+                self._solve_order.append(selRVars)
 
-    def delConstraint(self, cstr):
+    def del_constraint(self, cstr):
         """Delete a constraint function.
 
         Args:
@@ -260,9 +261,9 @@ class Randomized(object):
 
         Example:
 
-        >>> delConstraint(highdelay_cstr)
+        >>> del_constraint(highdelay_cstr)
         """
-        return self._delConstraint(cstr, self._randVariables)
+        return self._del_constraint(cstr, self._randVariables)
 
     def pre_randomize(self):
         """A function that is called before 
@@ -298,7 +299,7 @@ class Randomized(object):
 
         # add new constraints
         for cstr in constraints:
-            overwritten = self.addConstraint(cstr)
+            overwritten = self.add_constraint(cstr)
             if overwritten:
                 overwritten_constrains.append(overwritten)
 
@@ -310,16 +311,16 @@ class Randomized(object):
 
         # remove new constraints
         for cstr in constraints:
-            self.delConstraint(cstr)
+            self.del_constraint(cstr)
 
         # add back overwritten constraints
         for cstr in overwritten_constrains:
-            self.addConstraint(cstr)
+            self.add_constraint(cstr)
 
         if raise_exception:
             raise Exception("Could not resolve implicit constraints!")
 
-    def _addConstraint(self, cstr, rvars):
+    def _add_constraint(self, cstr, rvars):
         """Add a constraint for a specific random variables list
         (which determines a type of a constraint - simple or implicit).
         """
@@ -371,7 +372,7 @@ class Randomized(object):
 
             return overwriting
 
-    def _delConstraint(self, cstr, rvars):
+    def _del_constraint(self, cstr, rvars):
         """Delete a constraint for a specific random variables list
         (which determines a type of a constraint - simple or implicit).
         """
@@ -407,7 +408,7 @@ class Randomized(object):
         """
 
         self.pre_randomize()
-        if not self._solveOrder:
+        if not self._solve_order:
             #call _resolve for all random variables
             solution = self._resolve(self._randVariables)
             self._update_variables(solution)
@@ -420,7 +421,7 @@ class Randomized(object):
             resolvedRVars = []
 
             #list of random variables with defined solve order
-            remainingOrderedRVars = [item for sublist in self._solveOrder
+            remainingOrderedRVars = [item for sublist in self._solve_order
                                      for item in sublist]
 
             allConstraints = [] # list of functions (all constraints and dstr)
@@ -433,7 +434,7 @@ class Randomized(object):
             allConstraints.extend([self._simpleDistributions[_]
                                for _ in self._simpleDistributions])
 
-            for selRVars in self._solveOrder:
+            for selRVars in self._solve_order:
 
                 #step 1: determine all variables to be solved at this stage
                 actualRVars = list(selRVars) #add selected
@@ -467,7 +468,7 @@ class Randomized(object):
                 #limited list of random vars
                 actualCstr = []
                 for f_cstr in allConstraints:
-                    self.delConstraint(f_cstr)
+                    self.del_constraint(f_cstr)
                     f_cstr_args = inspect.signature(f_cstr).parameters
                     #add only constraints containing actualRVars but not
                     #remainingRVars
@@ -479,7 +480,7 @@ class Randomized(object):
                             ):
                             add_cstr = False
                     if add_cstr:
-                        self._addConstraint(f_cstr, newRandVariables)
+                        self._add_constraint(f_cstr, newRandVariables)
                         actualCstr.append(f_cstr)
 
                 #call _resolve for all random variables
@@ -490,10 +491,10 @@ class Randomized(object):
 
                 #add back everything as it was before this stage
                 for f_cstr in actualCstr:
-                    self._delConstraint(f_cstr, newRandVariables)
+                    self._del_constraint(f_cstr, newRandVariables)
 
                 for f_cstr in allConstraints:
-                    self._addConstraint(f_cstr, self._randVariables)
+                    self._add_constraint(f_cstr, self._randVariables)
 
         self.post_randomize()
 
@@ -530,7 +531,7 @@ class Randomized(object):
 
         # step 2: resolve implicit constraints using external solver
 
-        # we use external hard constraint solver here - file constraint.py
+        # external hard constraint solver - package python-constraint
         problem = constraint.Problem()
 
         constrainedVars = []  # all random variables for the solver
@@ -697,3 +698,34 @@ class Randomized(object):
         for var in self._randVariables:
             if var in solution:
                 setattr(self, var, solution[var])
+
+    #deprecated
+    def addRand(self, var, domain=None):
+        """.. deprecated:: 1.0"""
+        warnings.warn(
+         "Function addRand() is deprecated, use add_rand() instead"
+        )
+        self.add_rand(var, domain)
+
+    def solveOrder(self, *orderedVars):
+        """.. deprecated:: 1.0"""
+        warnings.warn(
+         "Function solveOrder() is deprecated, use solve_order() instead"
+        )
+        self.solve_order(*orderedVars)
+
+    def addConstraint(self, cstr):
+        """.. deprecated:: 1.0"""
+        warnings.warn(
+         "Function addConstraint() is deprecated, use add_constraint() instead"
+        )
+        self.add_constraint(cstr)
+
+    def delConstraint(self, cstr):
+        """.. deprecated:: 1.0"""
+        warnings.warn(
+         "Function delConstraint() is deprecated, use del_constraint() instead"
+        )
+        self.del_constraint(cstr)
+
+

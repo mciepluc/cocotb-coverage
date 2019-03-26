@@ -25,10 +25,10 @@ class Point(crv.Randomized):
         self.x = x
         self.y = y
 
-        self.addRand("x", list(range(-10, 10)))
-        self.addRand("y", list(range(-10, 10)))
+        self.add_rand("x", list(range(-10, 10)))
+        self.add_rand("y", list(range(-10, 10)))
         # constraining the space so that x < y
-        self.addConstraint(lambda x, y: x < y)
+        self.add_constraint(lambda x, y: x < y)
 
 ...
 

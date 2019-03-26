@@ -30,7 +30,7 @@ Functional Coverage features.
 
 Classes:
 
-* :class:`coverage_db` - singleton containing coverage database.
+* :class:`CoverageDB` - singleton containing coverage database.
 * :class:`CoverItem` - base class for coverage, corresponds to a covergroup, 
   created automatically.
 * :class:`CoverPoint` - a cover point with bins.
@@ -48,6 +48,7 @@ from collections import OrderedDict
 import inspect
 import operator
 import itertools
+import warnings
 
 # global variable collecting coverage in a prefix tree (trie)
 class CoverageDB(dict):
@@ -753,16 +754,20 @@ def coverage_section(*coverItems):
 
     return _nested(coverItems)
 
+#deprecated
 def reportCoverage(logger, bins=False):
     """.. deprecated:: 1.0"""
-    print("warning! function reportCoverage() is deprecated, use \
-      coverage_db.report_coverage() instead")
+    warnings.warn(
+     "Function reportCoverage() is deprecated, use " +
+     "coverage_db.report_coverage() instead"
+    )
     coverage_db.report_coverage(logger, bins)
 
 def coverageSection(*coverItems):
     """.. deprecated:: 1.0"""
-    print("warning! function coverageSection() is deprecated, use \
-      coverage_section() instead")
+    warnings.warn(
+     "Function coverageSection() is deprecated, use coverage_section() instead"
+    )
     return coverage_section(*coverItems)
 
 

@@ -44,11 +44,11 @@ class TestCRV(unittest.TestCase):
             self.y = y
             self.size = "small"
 
-            self.addRand("x", list(range(0, 10)))
-            self.addRand("y", list(range(0, 10)))
-            self.addRand("size", ["small", "medium", "large"])
+            self.add_rand("x", list(range(0, 10)))
+            self.add_rand("y", list(range(0, 10)))
+            self.add_rand("size", ["small", "medium", "large"])
 
-            self.addConstraint(lambda x, y: x < y)
+            self.add_constraint(lambda x, y: x < y)
 
     #simple randomization - test if simple constraint works and if all 
     #possible SimpleRandomize.size values picked
@@ -78,11 +78,11 @@ class TestCRV(unittest.TestCase):
             self.delay3 = 0
 
             if data is None:
-                self.addRand("data")
+                self.add_rand("data")
 
-            self.addRand("delay1", list(range(10)))
-            self.addRand("delay2", list(range(10)))
-            self.addRand("delay3", list(range(10)))
+            self.add_rand("delay1", list(range(10)))
+            self.add_rand("delay2", list(range(10)))
+            self.add_rand("delay3", list(range(10)))
             
             c1 = lambda delay1, delay2: delay1 <= delay2
             d1 = lambda delay1, delay2: 0.9 if (delay2 < 5) else 0.1
@@ -90,11 +90,11 @@ class TestCRV(unittest.TestCase):
             d3 = lambda delay1: 0.7 if (delay1 < 5) else 0.3
             c2 = lambda addr, data: data < 10000 if (addr == 0) else data < 5000
             
-            self.addConstraint(c1)
-            self.addConstraint(c2)
-            self.addConstraint(d1)
-            self.addConstraint(d2)
-            self.addConstraint(d3)
+            self.add_constraint(c1)
+            self.add_constraint(c2)
+            self.add_constraint(d1)
+            self.add_constraint(d2)
+            self.add_constraint(d3)
 
     #test if several constraints met at once
     def test_simple_1(self):
@@ -128,9 +128,9 @@ class TestCRV(unittest.TestCase):
 
         for i in range(5):
             x = self.RandomizedTrasaction(i, data=None)
-            x.addConstraint(c3)
-            x.addConstraint(c4)
-            x.addConstraint(c5)
+            x.add_constraint(c3)
+            x.add_constraint(c4)
+            x.add_constraint(c5)
             x.randomize()
             print("delay1 = %d, delay2 = %d, delay3 = %d, data = %d" %
                   (x.delay1, x.delay2, x.delay3, x.data))
@@ -146,13 +146,13 @@ class TestCRV(unittest.TestCase):
 
         for i in range(5):
             x = self.RandomizedTrasaction(i, data=None)
-            x.addConstraint(c3)
+            x.add_constraint(c3)
             x.randomize()
             print("delay1 = %d, delay2 = %d, delay3 = %d, data = %d" %
                   (x.delay1, x.delay2, x.delay3, x.data))
             self.assertTrue(x.delay1 <= x.delay2) # check if c1 still works
             self.assertTrue(x.data < 50) # check if c3 applies
-            x.delConstraint(c3) 
+            x.del_constraint(c3) 
             x.randomize()
             print("delay1 = %d, delay2 = %d, delay3 = %d, data = %d" %
                   (x.delay1, x.delay2, x.delay3, x.data))
@@ -165,7 +165,7 @@ class TestCRV(unittest.TestCase):
 
         for i in range(10):
             x = self.RandomizedTrasaction(i, data=None)
-            x.solveOrder("delay1", ["delay2", "delay3"])
+            x.solve_order("delay1", ["delay2", "delay3"])
             x.randomize()
             print("delay1 = %d, delay2 = %d, delay3 = %d, data = %d" %
                   (x.delay1, x.delay2, x.delay3, x.data))
@@ -180,8 +180,8 @@ class TestCRV(unittest.TestCase):
 
         for i in range(10):
             x = self.RandomizedTrasaction(i, data=None)
-            x.addConstraint(c3)
-            x.addConstraint(c4)
+            x.add_constraint(c3)
+            x.add_constraint(c4)
             try: #we expect excpetion to be thrown each time
                 x.randomize()
                 self.assertTrue(0) 
@@ -196,7 +196,7 @@ class TestCRV(unittest.TestCase):
 
         for i in range(10):
             x = self.RandomizedTrasaction(i, data=None)
-            x.addConstraint(d4)
+            x.add_constraint(d4)
             x.randomize()
             print("delay1 = %d, delay2 = %d, delay3 = %d, data = %d" %
                   (x.delay1, x.delay2, x.delay3, x.data))  
@@ -212,9 +212,9 @@ class TestCRV(unittest.TestCase):
             self.n = n
             self.e_pr = False
 
-            self.addRand("x", list(range(limit)))
-            self.addRand("y", list(range(limit)))
-            self.addRand("z", list(range(limit)))
+            self.add_rand("x", list(range(limit)))
+            self.add_rand("y", list(range(limit)))
+            self.add_rand("z", list(range(limit)))
             
         def post_randomize(self):
             if self.e_pr:
@@ -232,9 +232,9 @@ class TestCRV(unittest.TestCase):
 
         for i in range(1, 10):
             foo = self.RandomizedDist(limit=20 * i, n=i - 1)
-            foo.addConstraint(d1)
-            foo.addConstraint(d2)
-            foo.addConstraint(d3)
+            foo.add_constraint(d1)
+            foo.add_constraint(d2)
+            foo.add_constraint(d3)
             foo.randomize()
             print("x = %d, y = %d, z = %d, n = %d" %
                   (foo.x, foo.y, foo.z, foo.n))
@@ -253,7 +253,7 @@ class TestCRV(unittest.TestCase):
         print("Running test_cover")
         n = 5
 
-        cover = coverage.coverageSection(
+        cover = coverage.coverage_section(
             coverage.CoverPoint(
                 "top.c1", xf=lambda x: x.x, bins=list(range(10))),
             coverage.CoverPoint(

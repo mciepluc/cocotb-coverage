@@ -62,7 +62,7 @@ class FifoStatus():
        
 #functional coverage - check if all FIFO states have been reached
 #and check if read or write operation performed in every FIFO state 
-FIFO_Coverage = coverageSection (
+FIFO_Coverage = coverage_section (
   CoverPoint("top.rw", xf = lambda data, rw, status : rw, bins = [True, False]),
   CoverPoint("top.fifo_empty", xf = lambda data, rw, status : status.empty, bins = [True, False]),
   CoverPoint("top.fifo_full", xf = lambda data, rw, status : status.full, bins = [True, False]),
@@ -160,4 +160,4 @@ def fifo_test(dut):
                 log.info("Data NOT written, fifo FULL!")  
     
     #print coverage report
-    reportCoverage(log.info, bins=True)
+    coverage_db.report_coverage(log.info, bins=True)
