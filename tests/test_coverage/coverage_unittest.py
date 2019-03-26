@@ -63,7 +63,7 @@ class TestCoverage(unittest.TestCase):
         for i in range(10):
             self.assertTrue(coverage.coverage_db["t1.c1"].detailed_coverage[i] == 1)
 
-        coverage.reportCoverage(print, bins=False)
+        coverage.CoverageDB().report_coverage(print, bins=False)
 
     class FooBar():
         def __init__(self):

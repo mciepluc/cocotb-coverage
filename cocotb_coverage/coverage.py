@@ -30,6 +30,7 @@ Functional Coverage features.
 
 Classes:
 
+* :class:`coverage_db` - singleton containing coverage database.
 * :class:`CoverItem` - base class for coverage, corresponds to a covergroup, 
   created automatically.
 * :class:`CoverPoint` - a cover point with bins.
@@ -38,8 +39,7 @@ Classes:
 
 Functions:
 
-* :func:`~.reportCoverage` - prints coverage.
-* :func:`~.coverageSection` - allows for convenient definition of multiple
+* :func:`~.coverage_section` - allows for convenient definition of multiple
   coverage items and combines them into a single decorator.
 """
 
@@ -50,13 +50,51 @@ import operator
 import itertools
 
 # global variable collecting coverage in a prefix tree (trie)
-#TODO make it a singletone class
-coverage_db = {}  
-"""
-: a coverage prefix tree (map) containing all coverage objects with name string
-as a key (using dot as a stage separator).
-"""
+class CoverageDB(dict):
+    """ Class (singleton) containing coverage database.
 
+    This is the coverage prefix tree (trie) containing all coverage objects 
+    with name string as a key (using dot as a stage separator). Coverage 
+    primitives may be accessed by string identificator. Example coverage trie
+    is shown below: 
+
+    .. image:: coverstruct.png
+        :scale: 60 %
+        :align: center
+
+    Examples:
+
+    >>> CoverageDB()["top"] #access whole coverage under ``top``
+    >>> CoverageDB()["top.b"] #access whole covergroup
+    >>> CoverageDB()["top.b.cp1"] #access specific coverpoint       
+    """
+    _instance = None
+    def __new__(class_, *args, **kwargs):
+        if not isinstance(class_._instance, class_):
+            class_._instance = dict.__new__(class_, *args, **kwargs)
+        return class_._instance
+
+    def report_coverage(self, logger, bins=False):
+        """Print sorted coverage with optional bins details.
+
+        Args:
+            logger (func): a logger object.
+            bins (bool): print bins details.
+
+        """
+        sorted_cov = sorted(self, key=str.lower)
+        for ii in sorted_cov:
+            logger("   " * ii.count('.') + "%s : %s, coverage=%d, size=%d " % 
+                (ii, self[ii], self[ii].coverage, self[ii].size)
+              )
+            if (type(self[ii]) is not CoverItem) & (bins):
+                for jj in self[ii].detailed_coverage:
+                    logger("   " * ii.count('.') + "   BIN %s : %s" % 
+                        (jj, self[ii].detailed_coverage[jj])
+                      )
+
+coverage_db = CoverageDB()
+""" Instance of the :class:`CoverageDB`."""
 
 class CoverItem(object):
     """Class used to describe coverage groups.
@@ -74,6 +112,8 @@ class CoverItem(object):
         self._parent = None
         self._children = []
         self._new_hits = []
+        self._weight = 0
+        self._at_least = 0
 
         self._threshold_callbacks = {}
         self._bins_callbacks = {}
@@ -222,6 +262,25 @@ class CoverItem(object):
         """        
         return self._new_hits
 
+    @property
+    def weight(self):
+        """Return weight of the coverage primitive. Works only for objects 
+        deriving from :class:`CoverItem`.
+
+        Returns:
+            int: weight of the coverage primitive.
+        """        
+        return self._weight
+
+    @property
+    def at_least(self):
+        """Return ``at_least`` attribute of the coverage primitive. Works only 
+        for objects deriving from :class:`CoverItem`.
+
+        Returns:
+            int: ``at_least`` attribute of the coverage primitive.
+        """        
+        return self._at_least
 
 class CoverPoint(CoverItem):
     """Class used to create coverage points as decorators. 
@@ -242,15 +301,15 @@ class CoverPoint(CoverItem):
             exists) or a tuple (if multiple exist). Note that the ``self`` 
             argument is *always* removed from the argument list. 
         bins (list): a list of bins objects to be matched. Note that for 
-            non-trivial types, a ``rel`` must always be defined (or the equality 
-            operator must be overloaded).
-        rel (func, optional): a relation function which defines the bins matching 
-            relation (by default, the equality operator ``==``).
+            non-trivial types, a ``rel`` must always be defined (or the 
+            equality operator must be overloaded).
+        rel (func, optional): a relation function which defines the bins 
+            matching relation (by default, the equality operator ``==``).
         weight (int, optional): a ``CoverPoint`` weight (by default ``1``).
         at_least (int, optional): the number of hits per bins to be considered 
             as covered (by default ``1``).
-        inj (bool, optional): "injection" feature, defines that more than a single 
-            bin can be matched at one sampling (default ``False``).
+        inj (bool, optional): "injection" feature, defines that more than a 
+            single bin can be matched at one sampling (default ``False``).
 
     Example:
 
@@ -537,8 +596,8 @@ class CoverCheck(CoverItem):
             coverage trie.
         f_fail: a failure condition function - if it returns ``True``, them
             coverage level is set to ``0`` permanently.
-        f_pass: a pass condition function - if it returns ``True``, the coverage level 
-            is set to ``weight`` after ``at_least`` hits. 
+        f_pass: a pass condition function - if it returns ``True``, the 
+            coverage level is set to ``weight`` after ``at_least`` hits. 
         weight (int, optional): a ``CoverCheck`` weight (by default ``1``).
         at_least (int, optional): the number of hits of the ``f_pass`` function 
             to consider a particular ``CoverCheck`` as covered. 
@@ -550,8 +609,9 @@ class CoverCheck(CoverItem):
     ...     f_fail = lambda x : x == 0, 
     ...     f_pass = lambda x : x < 5)
     >>> def decorated_fun(self, arg):
-    >>> # CoverCheck is 100% covered when (arg < 5) and never (arg == 0) was sampled.
-    >>> # CoverCheck is set to 0 unconditionally when at least once (arg == 0) was sampled.
+    >>> # CoverCheck is 100% covered when (arg < 5) and never (arg == 0) was 
+    >>> # sampled. CoverCheck is set to 0 unconditionally when at least once
+    >>> # (arg == 0) was sampled.
     ...     ...
     """
     
@@ -664,34 +724,7 @@ class CoverCheck(CoverItem):
     def detailed_coverage(self):
         return self._hits
 
-#TODO maybe it's better to associate this function with coverage_db singleton 
-def reportCoverage(logger, bins=False):
-    """Print sorted coverage with optional bins details.
-
-    Args:
-        logger (func): a logger object.
-        bins (bool): print bins details.
-
-    """
-    sorted_cov = sorted(coverage_db, key=str.lower)
-    for ii in sorted_cov:
-        logger("   " * ii.count('.') + "%s : %s, coverage=%d, size=%d " % (
-            ii,
-            coverage_db[ii],
-            coverage_db[ii].coverage,
-            coverage_db[ii].size
-        )
-        )
-        if (type(coverage_db[ii]) is not CoverItem) & (bins):
-            for jj in coverage_db[ii].detailed_coverage:
-                logger("   " * ii.count('.') + "   BIN %s : %s" % (
-                    jj,
-                    coverage_db[ii].detailed_coverage[jj]
-                )
-                )
-
-
-def coverageSection(*coverItems):
+def coverage_section(*coverItems):
     """Combine multiple coverage items into a single decorator.
 
     Args:
@@ -719,3 +752,17 @@ def coverageSection(*coverItems):
         return _decorator
 
     return _nested(coverItems)
+
+def reportCoverage(logger, bins=False):
+    """.. deprecated:: 1.0"""
+    print("warning! function reportCoverage() is deprecated, use \
+      coverage_db.report_coverage() instead")
+    coverage_db.report_coverage(logger, bins)
+
+def coverageSection(*coverItems):
+    """.. deprecated:: 1.0"""
+    print("warning! function coverageSection() is deprecated, use \
+      coverage_section() instead")
+    return coverage_section(*coverItems)
+
+
