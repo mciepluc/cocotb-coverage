@@ -49,6 +49,11 @@ import inspect
 import operator
 import itertools
 import warnings
+#accelerated C implementation is faster/lower mem footprint
+try:
+    import xml.etree.cElementTree as et
+except ImportError:
+    import xml.etree.ElementTree as et
 
 # global variable collecting coverage in a prefix tree (trie)
 class CoverageDB(dict):
@@ -93,6 +98,60 @@ class CoverageDB(dict):
                     logger("   " * ii.count('.') + "   BIN %s : %s" % 
                         (jj, self[ii].detailed_coverage[jj])
                       )
+
+    def export_to_xml(self, bins=True, xml_name='coverage'):
+        cov_db_tmp = []
+        xml_db_dict = {}
+        #Create xml root
+        top = et.Element('top')
+        xml_db_dict['top'] = top
+
+        def create_element(name_elem_full, parent, name_elem):
+            attrib_dict = {}
+
+            #Common attributes
+            attrib_dict['size'] = str(self[name_elem_full].size) 
+            attrib_dict['coverage'] = str(self[name_elem_full].coverage)
+            attrib_dict['cover_percentage'] = str(round(self[name_elem_full].cover_percentage, 2))
+            if (type(self[name_elem_full]) == CoverPoint
+                or type(self[name_elem_full]) == CoverCross):
+                attrib_dict['weight'] = str(self[name_elem_full].weight)
+
+            #Create element: xml_db_dict[a.b.c] = et(a.b (parent), c (element))
+            xml_db_dict[name_elem_full] = et.SubElement(xml_db_dict[parent], name_elem, attrib=attrib_dict)
+
+            #Additionally create bins for CoverCross and CoverPoint
+            if bins and (type(self[name_elem_full]) == CoverPoint
+                         or type(self[name_elem_full]) == CoverCross):
+                bin_count = 0
+                #Database in format: key == bin_value, value == no_of_hits
+                for key, value in self[name_elem_full].detailed_coverage.items():
+                    attrib_dict.clear()
+                    #attrib_dict['id'] = str(name_elem_full)
+                    attrib_dict['bin_value'] = str(key)
+                    attrib_dict['hits'] = str(value)
+                    xml_db_dict[name_elem_full+'.bin'+str(bin_count)] = et.SubElement(xml_db_dict[name_elem_full], 'bin'+str(bin_count), attrib=attrib_dict)
+                    bin_count += 1
+
+        for name in self:
+            cov_db_tmp.append(name)
+
+        #Create xml elements from coverage_db elements
+        while len(cov_db_tmp) > 0:
+            name_tmp = cov_db_tmp.pop(0)
+            name_list = name_tmp.split('.')
+            parent = ''
+            for index, name_elem in enumerate(name_list):
+                name_elem_full = '.'.join(name_list[:index+1])
+                if name_elem_full not in xml_db_dict.keys():
+                    if index == 0:
+                        parent = 'top'
+                    else:
+                        parent = '.'.join(name_list[:index])
+
+                    create_element(name_elem_full, parent, name_elem)
+
+        et.ElementTree(top).write(xml_name+'.xml')
 
 coverage_db = CoverageDB()
 """ Instance of the :class:`CoverageDB`."""

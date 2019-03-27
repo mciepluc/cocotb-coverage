@@ -221,6 +221,11 @@ class TestCoverage(unittest.TestCase):
         self.assertTrue(cb1_fired[0])
         self.assertTrue(cb2_fired[0])
         self.assertTrue(cb3_fired[0])
+
+    #test xml export
+    def test_xml(self):
+        print("Running test_xml")
+        coverage.coverage_db.export_to_xml(xml_name='coverage_test')
         
 if __name__ == '__main__':
     import sys
