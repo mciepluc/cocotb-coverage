@@ -100,11 +100,9 @@ class CoverageDB(dict):
                       )
 
     def export_to_xml(self, bins=True, xml_name='coverage'):
-        cov_db_tmp = []
         xml_db_dict = {}
         #Create xml root
-        top = et.Element('top')
-        xml_db_dict['top'] = top
+        xml_db_dict['top'] = et.Element('top')
 
         def create_element(name_elem_full, parent, name_elem):
             attrib_dict = {}
@@ -134,12 +132,7 @@ class CoverageDB(dict):
                     bin_count += 1
 
         for name in self:
-            cov_db_tmp.append(name)
-
-        #Create xml elements from coverage_db elements
-        while len(cov_db_tmp) > 0:
-            name_tmp = cov_db_tmp.pop(0)
-            name_list = name_tmp.split('.')
+            name_list = name.split('.')
             parent = ''
             for index, name_elem in enumerate(name_list):
                 name_elem_full = '.'.join(name_list[:index+1])

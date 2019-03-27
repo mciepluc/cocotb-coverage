@@ -33,6 +33,7 @@ from cocotb_coverage import coverage
 
 import unittest
 import random
+import os.path
 
 class TestCoverage(unittest.TestCase):
 
@@ -226,6 +227,7 @@ class TestCoverage(unittest.TestCase):
     def test_xml(self):
         print("Running test_xml")
         coverage.coverage_db.export_to_xml(xml_name='coverage_test')
+        self.assertTrue(os.path.isfile('coverage_test.xml'))
         
 if __name__ == '__main__':
     import sys
