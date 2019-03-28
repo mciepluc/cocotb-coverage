@@ -63,7 +63,7 @@ class TestCoverage(unittest.TestCase):
         for i in range(10):
             self.assertTrue(coverage.coverage_db["t1.c1"].detailed_coverage[i] == 1)
 
-        coverage.coverage_db.report_coverage(print, bins=False)
+        #coverage.coverage_db.report_coverage(print, bins=False)
 
     class FooBar():
         def __init__(self):
@@ -221,7 +221,53 @@ class TestCoverage(unittest.TestCase):
         self.assertTrue(cb1_fired[0])
         self.assertTrue(cb2_fired[0])
         self.assertTrue(cb3_fired[0])
+
+    #test xml export
+    def test_xml(self):
+        import os.path
+        from xml.etree import ElementTree as et
+        print("Running test_xml")
         
+        #test CoverCheck
+        @coverage.CoverCheck(name = "t7.failed_check", 
+                             f_fail = lambda x : x == 0, 
+                             f_pass = lambda x : x > 500)
+        @coverage.CoverCheck(name = "t7.passing_check", 
+                             f_fail = lambda x : x > 100, 
+                             f_pass = lambda x : x < 50)
+        def sample(i):
+            pass
+        
+        for i in range(50):            
+            sample(i)
+            
+        coverage.coverage_db.report_coverage(print, bins=False)
+        
+        #Export coverage to XML, check if file exists
+        filename = 'coverage_test'
+        coverage.coverage_db.export_to_xml(xml_name=filename)
+        self.assertTrue(os.path.isfile(filename+'.xml'))
+        
+        #Read back the XML           
+        xml_db = et.parse(filename+'.xml').getroot()
+        #dict - child: [all parents for that name]
+        child_parent_dict = {} 
+        for p in xml_db.iter():
+            for c in p:
+                if 'bin' not in c.tag:
+                    if c.tag not in child_parent_dict.keys():
+                        child_parent_dict[c.tag] = [p.tag]
+                    else:
+                        child_parent_dict[c.tag].append(p.tag)
+         
+        #Check if coverage_db items are XML, with proper parents
+        for item in coverage.coverage_db:
+            item_elements = item.split('.')
+            self.assertTrue('top' in child_parent_dict[item_elements[0]])
+            for elem_parent, elem in zip(item_elements, item_elements[1:]):
+                self.assertTrue(elem_parent in child_parent_dict[elem])
+
+     
 if __name__ == '__main__':
     import sys
     print("PYTHON VERSION: ", sys.version)
