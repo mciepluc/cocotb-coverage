@@ -107,16 +107,14 @@ class CoverageDB(dict):
             attrib_dict['size'] = str(self[name_elem_full].size) 
             attrib_dict['coverage'] = str(self[name_elem_full].coverage)
             attrib_dict['cover_percentage'] = str(round(self[name_elem_full].cover_percentage, 2))
-            if (type(self[name_elem_full]) == CoverPoint
-                or type(self[name_elem_full]) == CoverCross):
+            if (type(self[name_elem_full]) != CoverItem):
                 attrib_dict['weight'] = str(self[name_elem_full].weight)
 
             #Create element: xml_db_dict[a.b.c] = et(a.b (parent), c (element))
             xml_db_dict[name_elem_full] = et.SubElement(xml_db_dict[parent], name_elem, attrib=attrib_dict)
 
             #Additionally create bins for CoverCross and CoverPoint
-            if bins and (type(self[name_elem_full]) == CoverPoint
-                         or type(self[name_elem_full]) == CoverCross):
+            if bins and (type(self[name_elem_full]) != CoverItem):
                 bin_count = 0
                 #Database in format: key == bin_value, value == no_of_hits
                 for key, value in self[name_elem_full].detailed_coverage.items():

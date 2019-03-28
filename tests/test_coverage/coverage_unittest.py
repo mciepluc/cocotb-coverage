@@ -65,7 +65,7 @@ class TestCoverage(unittest.TestCase):
         for i in range(10):
             self.assertTrue(coverage.coverage_db["t1.c1"].detailed_coverage[i] == 1)
 
-        coverage.coverage_db.report_coverage(print, bins=False)
+        #coverage.coverage_db.report_coverage(print, bins=False)
 
     class FooBar():
         def __init__(self):
@@ -227,6 +227,21 @@ class TestCoverage(unittest.TestCase):
     #test xml export
     def test_xml(self):
         print("Running test_xml")
+        
+        #test CoverCheck
+        @coverage.CoverCheck(name = "t7.failed_check", 
+                             f_fail = lambda x : x == 0, 
+                             f_pass = lambda x : x > 500)
+        @coverage.CoverCheck(name = "t7.passing_check", 
+                             f_fail = lambda x : x > 100, 
+                             f_pass = lambda x : x < 50)
+        def sample(i):
+            pass
+        
+        for i in range(50):            
+            sample(i)
+            
+        coverage.coverage_db.report_coverage(print, bins=False)
         
         #Export coverage to XML, check if file exists
         filename = 'coverage_test'
