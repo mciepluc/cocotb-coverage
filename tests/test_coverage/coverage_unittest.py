@@ -33,8 +33,6 @@ from cocotb_coverage import coverage
 
 import unittest
 import random
-import os.path
-from xml.etree import ElementTree as et
 
 class TestCoverage(unittest.TestCase):
 
@@ -226,6 +224,8 @@ class TestCoverage(unittest.TestCase):
 
     #test xml export
     def test_xml(self):
+        import os.path
+        from xml.etree import ElementTree as et
         print("Running test_xml")
         
         #test CoverCheck
