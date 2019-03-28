@@ -96,9 +96,17 @@ class CoverageDB(dict):
                       )
 
     def export_to_xml(self, bins=True, xml_name='coverage'):
+        """Export coverage_db to xml document.
+        
+        Args:
+            bins (bool): Option to omit bins in the xml
+            xml_name (str): Document name w/o .xml
+        
+        """
         xml_db_dict = {}
         #Create xml root
-        xml_db_dict['top'] = et.Element('top')
+        top = et.Element('top')
+        xml_db_dict['top'] = top
 
         def create_element(name_elem_full, parent, name_elem):
             attrib_dict = {}
@@ -107,14 +115,14 @@ class CoverageDB(dict):
             attrib_dict['size'] = str(self[name_elem_full].size) 
             attrib_dict['coverage'] = str(self[name_elem_full].coverage)
             attrib_dict['cover_percentage'] = str(round(self[name_elem_full].cover_percentage, 2))
-            if (type(self[name_elem_full]) != CoverItem):
+            if (type(self[name_elem_full]) is not CoverItem):
                 attrib_dict['weight'] = str(self[name_elem_full].weight)
 
             #Create element: xml_db_dict[a.b.c] = et(a.b (parent), c (element))
             xml_db_dict[name_elem_full] = et.SubElement(xml_db_dict[parent], name_elem, attrib=attrib_dict)
 
             #Additionally create bins for CoverCross and CoverPoint
-            if bins and (type(self[name_elem_full]) != CoverItem):
+            if bins and (type(self[name_elem_full]) is not CoverItem):
                 bin_count = 0
                 #Database in format: key == bin_value, value == no_of_hits
                 for key, value in self[name_elem_full].detailed_coverage.items():
