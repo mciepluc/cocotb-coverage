@@ -49,11 +49,7 @@ import inspect
 import operator
 import itertools
 import warnings
-#accelerated C implementation is faster/lower mem footprint
-try:
-    import xml.etree.cElementTree as et
-except ImportError:
-    import xml.etree.ElementTree as et
+from xml.etree import ElementTree as et
 
 # global variable collecting coverage in a prefix tree (trie)
 class CoverageDB(dict):
