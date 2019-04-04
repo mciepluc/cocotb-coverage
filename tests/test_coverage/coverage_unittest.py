@@ -113,7 +113,7 @@ class TestCoverage(unittest.TestCase):
         self.assertTrue(coverage.coverage_db["t3.inj"].coverage == 2) 
         sample(30) #covers 2,3 and 5
         self.assertTrue(coverage.coverage_db["t3.inj"].coverage == 5) 
-        sample(77) #covers 7 and ``
+        sample(77) #covers 7 and 11
         self.assertTrue(coverage.coverage_db["t3.inj"].coverage == 7) 
 
     #cross
@@ -166,8 +166,6 @@ class TestCoverage(unittest.TestCase):
             x = random.randint(0,5)
             sample(i, x)
  
-        
-
         #expect all covered, but weight is * 100
         self.assertTrue(coverage.coverage_db["t5.c1"].size == 1000)
         self.assertTrue(coverage.coverage_db["t5.c1"].coverage == 1000)
@@ -230,11 +228,11 @@ class TestCoverage(unittest.TestCase):
         
         #test CoverCheck
         @coverage.CoverCheck(name = "t7.failed_check", 
-                             f_fail = lambda x : x == 0, 
-                             f_pass = lambda x : x > 500)
+                             f_fail = lambda i : i == 0, 
+                             f_pass = lambda i : i > 500)
         @coverage.CoverCheck(name = "t7.passing_check", 
-                             f_fail = lambda x : x > 100, 
-                             f_pass = lambda x : x < 50)
+                             f_fail = lambda i : i > 100, 
+                             f_pass = lambda i : i < 50)
         def sample(i):
             pass
         
@@ -267,7 +265,31 @@ class TestCoverage(unittest.TestCase):
             for elem_parent, elem in zip(item_elements, item_elements[1:]):
                 self.assertTrue(elem_parent in child_parent_dict[elem])
 
-     
+
+    #test covercheck
+    def test_covercheck(self):
+        print("Running test_covercheck")
+
+        @coverage.CoverCheck("t8.check", f_pass = lambda x : x > 0, f_fail = lambda x : x < 0, at_least = 2)
+        def sample(x):
+            pass 
+
+        self.assertTrue(coverage.coverage_db["t8.check"].size == 1) 
+        self.assertTrue(coverage.coverage_db["t8.check"].coverage == 0) 
+        sample(0)
+        sample(1)
+        self.assertTrue(coverage.coverage_db["t8.check"].coverage == 0) #should not be covered yet
+        sample(5)
+        self.assertTrue(coverage.coverage_db["t8.check"].coverage == 1) #should be covered now
+        sample(-1)
+        self.assertTrue(coverage.coverage_db["t8.check"].coverage == 0) #should be fixed 0 now forever
+        sample(4)
+        sample(3)
+        sample(1)
+        self.assertTrue(coverage.coverage_db["t8.check"].coverage == 0)
+        sample(-1)
+        self.assertTrue(coverage.coverage_db["t8.check"].coverage == 0)
+    
 if __name__ == '__main__':
     import sys
     print("PYTHON VERSION: ", sys.version)

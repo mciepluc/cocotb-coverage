@@ -745,7 +745,7 @@ class CoverCheck(CoverItem):
 
             if passed:
                 self._hits["PASS"] += 1
-            elif not passed:
+            elif passed is not None:
                 self._hits["FAIL"] += 1
 
             if passed is not None:
@@ -771,7 +771,7 @@ class CoverCheck(CoverItem):
     @property
     def coverage(self):
         coverage = 0
-        if self._hits["FAIL"] == 0 and self._hits["PASS"] > self._at_least:
+        if self._hits["FAIL"] == 0 and self._hits["PASS"] >= self._at_least:
             coverage = self._weight
         return coverage
 
