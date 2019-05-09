@@ -117,6 +117,7 @@ venv.bak/
 # Results
 results.xml
 combined_results.xml
+coverage_test.xml
 
 # VCS files
 *.tab
