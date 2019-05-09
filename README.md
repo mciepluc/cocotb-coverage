@@ -2,6 +2,7 @@
 Functional Coverage and Constrained Randomization Extensions for Cocotb
 
 [![Documentation Status](https://readthedocs.org/projects/cocotb-coverage/badge/?version=latest)](http://cocotb-coverage.readthedocs.org/en/latest/)
+[![Build Status](https://travis-ci.org/mciepluc/cocotb-coverage.svg?branch=master)](https://travis-ci.org/mciepluc/cocotb-coverage)
 
 This package allows you to use constrained randomization and functional coverage techniques known from CRV (constrained random verification) and MDV (metric-driven verification) methodologies, available in SystemVerilog or _e_. Such extensions enable the implementation of an advanced verification environment for complex projects.
 
