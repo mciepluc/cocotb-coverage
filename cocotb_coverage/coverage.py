@@ -97,16 +97,21 @@ class CoverageDB(dict):
 
     def export_to_xml(self, bins=True, xml_name='coverage'):
         """Export coverage_db to xml document.
-        
         Args:
             bins (bool): Option to omit bins in the xml
             xml_name (str): Document name w/o .xml
-        
         """
         xml_db_dict = {}
-        #Create xml root
-        top = et.Element('top')
-        xml_db_dict['top'] = top
+
+        def create_top():
+            attrib_dict = {}
+            if 'top' in self:
+                attrib_dict['size'] = str(self['top'].size) 
+                attrib_dict['coverage'] = str(self['top'].coverage)
+                attrib_dict['cover_percentage'] = str(round(
+                    self['top'].cover_percentage, 2))
+            xml_db_dict['top'] = et.Element('top', attrib=attrib_dict)
+
 
         def create_element(name_elem_full, parent, name_elem):
             attrib_dict = {}
@@ -137,6 +142,8 @@ class CoverageDB(dict):
                         'bin'+str(bin_count), attrib=attrib_dict))
                     bin_count += 1
 
+        #======================== Function body ===============================
+        create_top()
         for name in self:
             name_list = name.split('.')
             parent = ''
@@ -146,7 +153,19 @@ class CoverageDB(dict):
                     parent = 'top' if index == 0 else '.'.join(name_list[:index])
                     create_element(name_elem_full, parent, name_elem)
 
-        et.ElementTree(top).write(xml_name+'.xml')
+        #update total coverage if there was no 'top' in coverage_db
+        if xml_db_dict['top'].attrib == {}:
+            top_size = 0
+            top_coverage = 0
+            for child in xml_db_dict['top'].getchildren():
+                top_size += int(child.attrib['size'])
+                top_coverage += int(child.attrib['coverage'])
+                top_cover_percentage = round(top_coverage*100/top_size, 2)
+            xml_db_dict['top'].set('size', str(top_size))
+            xml_db_dict['top'].set('coverage', str(top_coverage))
+            xml_db_dict['top'].set('cover_percentage', str(top_cover_percentage))
+
+        et.ElementTree(xml_db_dict['top']).write(xml_name+'.xml')
 
 coverage_db = CoverageDB()
 """ Instance of the :class:`CoverageDB`."""
