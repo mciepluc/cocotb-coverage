@@ -110,19 +110,23 @@ class CoverageDB(dict):
                 attrib_dict['coverage'] = str(self['top'].coverage)
                 attrib_dict['cover_percentage'] = str(round(
                     self['top'].cover_percentage, 2))
+                attrib_dict['abs_name'] = 'top'
             xml_db_dict['top'] = et.Element('top', attrib=attrib_dict)
 
 
-        def create_element(name_elem_full, parent, name_elem):
+        def create_element(name_elem, parent, name_elem_full):
             attrib_dict = {}
 
             #Common attributes
             attrib_dict['size'] = str(self[name_elem_full].size) 
             attrib_dict['coverage'] = str(self[name_elem_full].coverage)
             attrib_dict['cover_percentage'] = str(round(
-                    self[name_elem_full].cover_percentage, 2))
+                self[name_elem_full].cover_percentage, 2))
+            attrib_dict['abs_name'] = 'top.'+name_elem_full
             if (type(self[name_elem_full]) is not CoverItem):
                 attrib_dict['weight'] = str(self[name_elem_full].weight)
+                attrib_dict['at_least'] = str(
+                    self[name_elem_full].at_least)
 
             #Create element: xml_db_dict[a.b.c] = et(a.b (parent), c (element))
             xml_db_dict[name_elem_full] = et.SubElement(xml_db_dict[parent],
@@ -137,6 +141,8 @@ class CoverageDB(dict):
                     #attrib_dict['id'] = str(name_elem_full)
                     attrib_dict['bin_value'] = str(key)
                     attrib_dict['hits'] = str(value)
+                    attrib_dict['abs_name'] = ('top.'+name_elem_full
+                                               +'.bin'+str(bin_count))
                     xml_db_dict[name_elem_full+'.bin'+str(bin_count)] = (
                         et.SubElement(xml_db_dict[name_elem_full],
                         'bin'+str(bin_count), attrib=attrib_dict))
@@ -144,14 +150,13 @@ class CoverageDB(dict):
 
         #======================== Function body ===============================
         create_top()
-        for name in self:
-            name_list = name.split('.')
-            parent = ''
-            for index, name_elem in enumerate(name_list):
-                name_elem_full = '.'.join(name_list[:index+1])
-                if name_elem_full not in xml_db_dict.keys():
-                    parent = 'top' if index == 0 else '.'.join(name_list[:index])
-                    create_element(name_elem_full, parent, name_elem)
+        for name_elem_full in self:
+            name_list = name_elem_full.split('.')
+            name_elem = name_list[-1]
+            name_parent = '.'.join(name_list[:-1])
+            if name_parent == '':
+                name_parent = 'top'
+            create_element(name_elem, name_parent, name_elem_full)
 
         #update total coverage if there was no 'top' in coverage_db
         if xml_db_dict['top'].attrib == {}:
@@ -164,6 +169,7 @@ class CoverageDB(dict):
             xml_db_dict['top'].set('size', str(top_size))
             xml_db_dict['top'].set('coverage', str(top_coverage))
             xml_db_dict['top'].set('cover_percentage', str(top_cover_percentage))
+            xml_db_dict['top'].set('abs_name', 'top')
 
         et.ElementTree(xml_db_dict['top']).write(xml_name+'.xml')
 
