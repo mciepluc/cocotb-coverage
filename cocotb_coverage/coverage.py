@@ -209,7 +209,7 @@ def XML_merger(merged_xml_name, *xmls):
                         if elem.attrib['abs_name'] not in name_to_elem.keys()]
         # Sort descending
         new_elements.sort(key=lambda _: _.attrib['abs_name'].count('.'))
-        # Bin list to be merged w/o new elements
+        # Bin list to be updated w/o bins not present in the merged
         bin_list = [elem for elem in root.iter() if 'bin' in elem.tag
                     and elem not in new_elements]
 
@@ -220,7 +220,7 @@ def XML_merger(merged_xml_name, *xmls):
                           coverage_update=0, size_update=0):
             parent_name = get_parent(name)
             if parent_name == '':
-                return
+                return # Top reached
             else:
                 if new_element_update:
                     coverage_update = int(
@@ -231,7 +231,7 @@ def XML_merger(merged_xml_name, *xmls):
                     coverage_update = int(
                         name_to_elem[parent_name].attrib['weight'])
 
-                # Update
+                # Update current parent
                 name_to_elem[parent_name].attrib['coverage'] = str(int(
                     name_to_elem[parent_name].attrib['coverage'])
                     + coverage_update)
@@ -240,11 +240,12 @@ def XML_merger(merged_xml_name, *xmls):
                 name_to_elem[parent_name].attrib['cover_percentage'] = str(
                     round((int(name_to_elem[parent_name].attrib['coverage'])
                     *100/int(name_to_elem[parent_name].attrib['size'])), 2))
+                # Recursively update parents
                 update_parent(parent_name, False, False,
                               coverage_update, size_update)
 
         # Merge function body
-        # Extend xml with new elements
+        # Extend merged with new elements in descending order
         for elem in new_elements:
             abs_name = elem.attrib['abs_name']
             parent_name = get_parent(abs_name)
@@ -270,7 +271,8 @@ def XML_merger(merged_xml_name, *xmls):
                         and hits_orig+hits >= parent_hits_threshold):
                     update_parent(name=abs_name, bin_update=True,
                                   new_element_update=False)
-
+    
+    # Call combine function to merge XMLs
     combine()
 
 
