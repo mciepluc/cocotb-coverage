@@ -100,8 +100,9 @@ class CoverageDB(dict):
 
     def export_to_xml(self, xml_name='coverage.xml'):
         """Export coverage_db to xml document.
+
         Args:
-            xml_name (str): Output document name with .xml suffix
+            xml_name (str): output document name with .xml suffix
         """
         xml_db_dict = {}
 
@@ -864,11 +865,13 @@ def _indent(elem, level=0):
 
 def XML_merger(merged_xml_name, *xmls):
     """ Function used for merging coverage metrics in XML format.
-    Args:
-        merged_xml_name (str): Output XML name with .xml suffix
-        xmls (str): Comma separated XML names with .xml suffix
 
-    Examples:
+    Args:
+        merged_xml_name (str): output XML name with .xml suffix
+        *xmls ((multiple) str): comma separated XML names with .xml suffix
+
+    Example:
+
     >>> XML_merger('merged.xml', 'one.xml', 'other.xml') # merge one and other
     """
     roots = [et.parse(xml).getroot() for xml in xmls]
