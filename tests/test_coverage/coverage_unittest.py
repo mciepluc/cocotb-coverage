@@ -229,7 +229,7 @@ class TestCoverage(unittest.TestCase):
         #test CoverCheck
         @coverage.CoverCheck(name = "t7.failed_check", 
                              f_fail = lambda i : i == 0, 
-                             f_pass = lambda i : i > 500)
+                             f_pass = lambda i : i > 5)
         @coverage.CoverCheck(name = "t7.passing_check", 
                              f_fail = lambda i : i > 100, 
                              f_pass = lambda i : i < 50)
