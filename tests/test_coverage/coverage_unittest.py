@@ -221,10 +221,10 @@ class TestCoverage(unittest.TestCase):
         self.assertTrue(cb3_fired[0])
 
     #test xml export
-    def test_xml(self):
+    def test_xml_export(self):
         import os.path
         from xml.etree import ElementTree as et
-        print("Running test_xml")
+        print("Running test_xml_export")
         
         #test CoverCheck
         @coverage.CoverCheck(name = "t7.failed_check", 
@@ -242,12 +242,12 @@ class TestCoverage(unittest.TestCase):
         coverage.coverage_db.report_coverage(print, bins=False)
         
         #Export coverage to XML, check if file exists
-        filename = 'coverage_test'
+        filename = 'test_xml_export_output.xml'
         coverage.coverage_db.export_to_xml(xml_name=filename)
-        self.assertTrue(os.path.isfile(filename+'.xml'))
+        self.assertTrue(os.path.isfile(filename))
         
         #Read back the XML           
-        xml_db = et.parse(filename+'.xml').getroot()
+        xml_db = et.parse(filename).getroot()
         #dict - child: [all parents for that name]
         child_parent_dict = {} 
         for p in xml_db.iter():
@@ -264,6 +264,24 @@ class TestCoverage(unittest.TestCase):
             self.assertTrue('top' in child_parent_dict[item_elements[0]])
             for elem_parent, elem in zip(item_elements, item_elements[1:]):
                 self.assertTrue(elem_parent in child_parent_dict[elem])
+
+
+    # test xml merge - static example covering 
+    # adding new elements and updating existing
+    def test_xml_merge(self):
+        import os.path
+        from xml.etree import ElementTree as et
+        print("Running test_xml_merge")
+        filename = 'test_xml_merge_output.xml'
+
+        coverage.XML_merger(filename, 'short1.xml', 'short2.xml', 'short3.xml')
+        self.assertTrue(os.path.isfile(filename))
+        
+        #Read back the XML           
+        xml_db = et.parse(filename).getroot()
+        self.assertTrue(xml_db.tag == 'top')
+        self.assertTrue(xml_db.attrib['coverage'] == '102')
+        self.assertTrue(xml_db.attrib['size'] == '104')
 
 
     #test covercheck
