@@ -52,8 +52,6 @@ import warnings
 import copy
 from xml.etree import ElementTree as et
 
-# global variable collecting coverage in a prefix tree (trie)
-
 
 class CoverageDB(dict):
     """ Class (singleton) containing coverage database.
@@ -177,12 +175,29 @@ class CoverageDB(dict):
             xml_db_dict['top'].set(
                 'cover_percentage', str(top_cover_percentage))
 
+        root = et.ElementTree(xml_db_dict['top']).getroot()
+        indent(root)
         et.ElementTree(xml_db_dict['top']).write(xml_name)
 
-
+# global variable collecting coverage in a prefix tree (trie)
 coverage_db = CoverageDB()
 """ Instance of the :class:`CoverageDB`."""
 
+# XML pretty print format - ElementTree lib extension
+def indent(elem, level=0):
+    i = "\n" + level*"  "
+    if len(elem):
+        if not elem.text or not elem.text.strip():
+            elem.text = i + "  "
+        if not elem.tail or not elem.tail.strip():
+            elem.tail = i
+        for elem in elem:
+            indent(elem, level+1)
+        if not elem.tail or not elem.tail.strip():
+            elem.tail = i
+    else:
+        if level and (not elem.tail or not elem.tail.strip()):
+            elem.tail = i
 
 def XML_merger(merged_xml_name, *xmls):
     """ Function used for merging coverage metrics in XML format.
@@ -201,6 +216,7 @@ def XML_merger(merged_xml_name, *xmls):
     def combine():
         for root in roots[1:]:
             combine_element(root)
+        indent(merged_root) # pretty print format
         et.ElementTree(merged_root).write(merged_xml_name)
 
     def combine_element(root):
