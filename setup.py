@@ -48,7 +48,7 @@ setup(
     author='Marek Cieplucha',
     author_email='',
     packages=find_packages(),
-    install_requires= ['python-constraint'],
+    install_requires= ['cocotb', 'python-constraint'],
     python_requires=">=3.3",
     platforms='any',
     classifiers=[
