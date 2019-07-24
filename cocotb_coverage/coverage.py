@@ -85,7 +85,7 @@ class CoverageDB(dict):
         Args:
             logger (func): a logger object.
             bins (bool, optional): print bins details.
-            node (string, optional): starting node of the coverage trie.
+            node (str, optional): starting node of the coverage trie.
         """
         sorted_cov = sorted(self, key=str.lower)
         for ii in filter(lambda _ : _.startswith(node), sorted_cov):
@@ -394,7 +394,7 @@ class CoverPoint(CoverItem):
         bins (list): a list of bins objects to be matched. Note that for 
             non-trivial types, a ``rel`` must always be defined (or the 
             equality operator must be overloaded).
-        bins_labels (list, optional): a list of labels (string) associated with
+        bins_labels (list, optional): a list of labels (str) associated with
             defined bins. Both lists lengths must match.
         rel (func, optional): a relation function which defines the bins 
             matching relation (by default, the equality operator ``==``).

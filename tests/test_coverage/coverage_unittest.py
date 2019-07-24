@@ -318,7 +318,15 @@ class TestCoverage(unittest.TestCase):
         def sample(i):
             pass
 
-        coverage.coverage_db.report_coverage(print, bins=True, node="t9")
+        print_ = []
+        def logger(_):
+            print_.append(_)
+
+        coverage.coverage_db.report_coverage(logger, bins=True, node="t9")
+
+        #check if only t9 printed
+        self.assertTrue(print_[0].startswith("t9"))
+        print(print_)
 
 if __name__ == '__main__':
     import sys
