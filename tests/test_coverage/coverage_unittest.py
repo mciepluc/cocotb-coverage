@@ -29,6 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. '''
 """
 Constrained-random verification features unittest.
 """
+
 from cocotb_coverage import coverage
 
 import unittest
@@ -307,8 +308,20 @@ class TestCoverage(unittest.TestCase):
         self.assertTrue(coverage.coverage_db["t8.check"].coverage == 0)
         sample(-1)
         self.assertTrue(coverage.coverage_db["t8.check"].coverage == 0)
-    
+
+    def test_print_coverage(self):
+        print("Running test_print_coverage")
+
+        @coverage.CoverPoint("t9.c1", bins_labels = ["a", "b"], bins=[(1,1), (2,2)])
+        @coverage.CoverPoint("t9.c2", bins_labels = ["c", "d"], bins=[3,4])
+        @coverage.CoverCross("t9.cross", items=["t9.c1", "t9.c2"])
+        def sample(i):
+            pass
+
+        coverage.coverage_db.report_coverage(print, bins=True, node="t9")
+
 if __name__ == '__main__':
     import sys
     print("PYTHON VERSION: ", sys.version)
     unittest.main()
+

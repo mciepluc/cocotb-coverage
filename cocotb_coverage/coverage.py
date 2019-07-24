@@ -79,16 +79,16 @@ class CoverageDB(dict):
             class_._instance = dict.__new__(class_, *args, **kwargs)
         return class_._instance
 
-    def report_coverage(self, logger, bins=False):
+    def report_coverage(self, logger, bins=False, node=""):
         """Print sorted coverage with optional bins details.
 
         Args:
             logger (func): a logger object.
-            bins (bool): print bins details.
-
+            bins (bool, optional): print bins details.
+            node (string, optional): starting node of the coverage trie.
         """
         sorted_cov = sorted(self, key=str.lower)
-        for ii in sorted_cov:
+        for ii in filter(lambda _ : _.startswith(node), sorted_cov):
             logger("   " * ii.count('.') + "%s : %s, coverage=%d, size=%d " %
                    (ii, self[ii], self[ii].coverage, self[ii].size)
                    )
@@ -138,10 +138,10 @@ class CoverageDB(dict):
             # Create bins for CoverCross and CoverPoint
             if type(self[name_elem_full]) is not CoverItem:
                 bin_count = 0
-                # Database in format: key == bin_value, value == no_of_hits
+                # Database in format: key == bin, value == no_of_hits
                 for key, value in self[name_elem_full].detailed_coverage.items():
                     attrib_dict.clear()
-                    attrib_dict['bin_value'] = str(key)
+                    attrib_dict['bin'] = str(key)
                     attrib_dict['hits'] = str(value)
                     attrib_dict['abs_name'] = (prefix+name_elem_full
                                                +'.bin'+str(bin_count))
@@ -328,7 +328,8 @@ class CoverItem(object):
     @property
     def detailed_coverage(self):
         """Return detailed coverage - full list of bins associated with number
-        of hits. 
+        of hits. If labels are assigned to bins, labels are returned instead
+        of bins values.
 
         A dictionary (bins) -> (number of hits) is returned. 
 
@@ -393,6 +394,8 @@ class CoverPoint(CoverItem):
         bins (list): a list of bins objects to be matched. Note that for 
             non-trivial types, a ``rel`` must always be defined (or the 
             equality operator must be overloaded).
+        bins_labels (list, optional): a list of labels (string) associated with
+            defined bins. Both lists lengths must match.
         rel (func, optional): a relation function which defines the bins 
             matching relation (by default, the equality operator ``==``).
         weight (int, optional): a ``CoverPoint`` weight (by default ``1``).
@@ -426,20 +429,26 @@ class CoverPoint(CoverItem):
     """
 
     # conditional Object creation, only if name not already registered
-    def __new__(cls, name, vname=None, xf=None, rel=None, bins=[], weight=1,
-                at_least=1, inj=False):
+    def __new__(cls, name, vname=None, xf=None, rel=None, bins=[],
+                bins_labels=None, weight=1, at_least=1, inj=False):
         if name in coverage_db:
             return coverage_db[name]
         else:
             return super(CoverPoint, cls).__new__(CoverPoint)
 
     def __init__(self, name, vname=None, xf=None, rel=None, bins=[],
-                 weight=1, at_least=1, inj=False):
+                 bins_labels=None, weight=1, at_least=1, inj=False):
         if not name in coverage_db:
             CoverItem.__init__(self, name)
             if self._parent is None:
                 raise Exception("CoverPoint must have a parent \
                                  (parent.CoverPoint)")
+
+            if (bins_labels is not None) and (len(bins_labels) != len(bins)):
+                raise Exception("Length of bins and bins_labels must be \
+                                 equal")
+
+            self._bins_labels = bins_labels
 
             self._transformation = xf
             self._vname = vname
@@ -548,6 +557,8 @@ class CoverPoint(CoverItem):
 
     @property
     def detailed_coverage(self):
+        if self._bins_labels is not None:
+            return dict(zip(self._bins_labels, list(self._hits.values())))
         return self._hits
 
 
