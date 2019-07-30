@@ -1,9 +1,9 @@
 
 #Unit test may be called without cocotb package and hardware modules
 #Just run it by:
-#python crv_unittest.py
+#python -m pytest
 
-MODULE = test_crv
+MODULE = crv_test_main
 TOPLEVEL := sample_module
 
 TESTS_DIR = $(abspath $(dir $(abspath $(shell pwd))))
