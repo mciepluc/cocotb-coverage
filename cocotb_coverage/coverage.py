@@ -168,7 +168,7 @@ class CoverageDB(dict):
         if xml_db_dict['top'].attrib == {'abs_name': 'top'}:
             top_size = 0
             top_coverage = 0
-            for child in xml_db_dict['top'].getchildren():
+            for child in xml_db_dict['top']:
                 top_size += int(child.attrib['size'])
                 top_coverage += int(child.attrib['coverage'])
                 top_cover_percentage = round(top_coverage*100/top_size, 2)
@@ -466,6 +466,10 @@ class CoverPoint(CoverItem):
                 self._size = self._weight
                 self._hits = OrderedDict.fromkeys([True], 0)
 
+            #make a map assigning label to the bin
+            if self._bins_labels is not None:
+                self._labels_bins = dict(zip(bins, bins_labels))
+
             # determines whether decorated a bound method
             self._decorates_method = None
             # determines whether transformation function is a bound method
@@ -524,13 +528,16 @@ class CoverPoint(CoverItem):
 
             # compare function result using relation function with matching
             # bins
-            for bins in self._hits:
-                if self._relation(result, bins):
-                    self._hits[bins] += 1
-                    self._new_hits.append(bins)
+            for bin in self._hits:
+                if self._relation(result, bin):
+                    self._hits[bin] += 1
+                    if self._bins_labels is not None:
+                        self._new_hits.append(self._labels_bins[bin])
+                    else:
+                        self._new_hits.append(bin)
                     # check bins callbacks
-                    if bins in self._bins_callbacks:
-                        self._bins_callbacks[bins]()
+                    if bin in self._bins_callbacks:
+                        self._bins_callbacks[bin]()
                     # if injective function, continue through all bins
                     if not self._injection:
                         break
@@ -630,15 +637,15 @@ class CoverCross(CoverItem):
             self._hits = dict.fromkeys(itertools.product(*bins_lists), 0)
 
             # remove ignore bins from _hits map if relation is true
-            for x_bins in list(self._hits.keys()):
+            for x_bin in list(self._hits.keys()):
                 for ignore_bins in ign_bins:
                     remove = True
-                    for ii in range(0, len(x_bins)):
+                    for ii in range(0, len(x_bin)):
                         if ignore_bins[ii] is not None:
-                            if (ignore_bins[ii] != x_bins[ii]):
+                            if (ignore_bins[ii] != x_bin[ii]):
                                 remove = False
-                    if remove and (x_bins in self._hits):
-                        del self._hits[x_bins]
+                    if remove and (x_bin in self._hits):
+                        del self._hits[x_bin]
 
             self._size = self._weight * len(self._hits)
             self._parent._update_size(self._size)
@@ -655,12 +662,12 @@ class CoverCross(CoverItem):
 
             # a list of hit cross-bins, key is a tuple of bins Cartesian
             # product
-            for x_bins_hit in list(itertools.product(*hit_lists)):
-                if x_bins_hit in self._hits:
-                    self._hits[x_bins_hit] += 1
+            for x_bin_hit in list(itertools.product(*hit_lists)):
+                if x_bin_hit in self._hits:
+                    self._hits[x_bin_hit] += 1
                     # check bins callbacks
-                    if x_bins_hit in self._bins_callbacks:
-                        self._bins_callbacks[x_bins_hit]()
+                    if x_bin_hit in self._bins_callbacks:
+                        self._bins_callbacks[x_bin_hit]()
 
             # notify parent about new coverage level
             self._parent._update_coverage(self.coverage - current_coverage)

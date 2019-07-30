@@ -1,5 +1,5 @@
 
-'''Copyright (c) 2018, TDK Electronics
+'''Copyright (c) 2019, TDK Electronics
 All rights reserved.
 
 Author: Marek Cieplucha, https://github.com/mciepluc
@@ -63,7 +63,7 @@ class FifoStatus():
 #functional coverage - check if all FIFO states have been reached
 #and check if read or write operation performed in every FIFO state 
 FIFO_Coverage = coverage_section (
-  CoverPoint("top.rw", xf = lambda data, rw, status : rw, bins = [True, False]),
+  CoverPoint("top.rw", vname="rw", bins = [True, False]),
   CoverPoint("top.fifo_empty", xf = lambda data, rw, status : status.empty, bins = [True, False]),
   CoverPoint("top.fifo_full", xf = lambda data, rw, status : status.full, bins = [True, False]),
   CoverPoint("top.fifo_threshold", xf = lambda data, rw, status : status.threshold, bins = [True, False]),

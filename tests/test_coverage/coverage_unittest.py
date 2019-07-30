@@ -312,9 +312,7 @@ class TestCoverage(unittest.TestCase):
     def test_print_coverage(self):
         print("Running test_print_coverage")
 
-        @coverage.CoverPoint("t9.c1", bins_labels = ["a", "b"], bins=[(1,1), (2,2)])
-        @coverage.CoverPoint("t9.c2", bins_labels = ["c", "d"], bins=[3,4])
-        @coverage.CoverCross("t9.cross", items=["t9.c1", "t9.c2"])
+        @coverage.CoverPoint("t9.c1", bins=[1,2,3])
         def sample(i):
             pass
 
@@ -326,7 +324,28 @@ class TestCoverage(unittest.TestCase):
 
         #check if only t9 printed
         self.assertTrue(print_[0].startswith("t9"))
-        print(print_)
+        #print(print_)
+
+    def test_bins_labels(self):
+        print("Running test_bins_labels")
+
+        @coverage.CoverPoint("t10.c1", xf = lambda i,j : (i , i), bins_labels = ["a", "b"], bins=[(1,1), (2,2)])
+        @coverage.CoverPoint("t10.c2", vname="j", bins_labels = ["c", "d"], bins=[3,4])
+        @coverage.CoverCross("t10.cross", items=["t10.c1", "t10.c2"])
+        def sample(i,j):
+            pass
+
+        self.assertTrue(coverage.coverage_db["t10.cross"].size == 4)
+        sample(1,1)
+        self.assertTrue(coverage.coverage_db["t10.cross"].coverage == 0)
+        sample(1,3)
+        self.assertTrue(coverage.coverage_db["t10.cross"].coverage == 1)
+        sample(1,4)
+        self.assertTrue(coverage.coverage_db["t10.cross"].coverage == 2)
+        sample(2,4)
+        self.assertTrue(coverage.coverage_db["t10.cross"].coverage == 3)
+        sample(2,3)
+        self.assertTrue(coverage.coverage_db["t10.cross"].coverage == 4)
 
 if __name__ == '__main__':
     import sys
