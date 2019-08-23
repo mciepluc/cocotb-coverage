@@ -98,11 +98,48 @@ class CoverageDB(dict):
                            (jj, self[ii].detailed_coverage[jj])
                            )
 
-    def export_to_xml(self, xml_name='coverage.xml'):
+    def export_to_yaml(self, filename='coverage.yml'):
+        """Export coverage_db to YAML document.
+
+        Args:
+            filename (str): output document name with .yml suffix
+        """
+        import yaml
+
+        export_data = {}
+        for name_elem_full in sorted(self, key=str.lower):
+
+            attrib_dict = {}
+            attrib_dict['type'] = str(type(self[name_elem_full]))
+            attrib_dict['size'] = self[name_elem_full].size
+            attrib_dict['coverage'] = self[name_elem_full].coverage
+            attrib_dict['cover_percentage'] = round(self[name_elem_full].cover_percentage, 2)
+
+            if (type(self[name_elem_full]) is not CoverItem):
+                attrib_dict['weight'] = self[name_elem_full].weight
+                attrib_dict['at_least'] = self[name_elem_full].at_least
+
+                bins = []
+                hits = []
+
+                for key, value in self[name_elem_full].detailed_coverage.items():
+                    if hasattr(key, '__iter__'): #convert iterables to string
+                        key = str(key)
+                    bins.append(key)
+                    hits.append(value)
+
+                attrib_dict['bins:_hits'] = dict(zip(bins, hits))
+
+            export_data[name_elem_full] = attrib_dict
+
+        with open(filename, 'w') as outfile:
+            yaml.dump(export_data, outfile, default_flow_style=False)
+
+    def export_to_xml(self, filename='coverage.xml'):
         """Export coverage_db to xml document.
 
         Args:
-            xml_name (str): output document name with .xml suffix
+            filename (str): output document name with .xml suffix
         """
         xml_db_dict = {}
 
@@ -179,7 +216,7 @@ class CoverageDB(dict):
 
         root = et.ElementTree(xml_db_dict['top']).getroot()
         _indent(root)
-        et.ElementTree(xml_db_dict['top']).write(xml_name)
+        et.ElementTree(xml_db_dict['top']).write(filename)
 
 # global variable collecting coverage in a prefix tree (trie)
 coverage_db = CoverageDB()
