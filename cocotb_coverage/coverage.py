@@ -50,8 +50,6 @@ import inspect
 import operator
 import itertools
 import warnings
-import copy
-from xml.etree import ElementTree as et
 
 
 class CoverageDB(dict):
@@ -141,6 +139,7 @@ class CoverageDB(dict):
         Args:
             filename (str): output document name with .xml suffix
         """
+        from xml.etree import ElementTree as et
         xml_db_dict = {}
 
         def create_top():
@@ -900,8 +899,6 @@ def coverage_section(*coverItems):
 
     return _nested(coverItems)
 
-### XML coverage database functions
-
 # XML pretty print format - ElementTree lib extension
 def _indent(elem, level=0):
     i = "\n" + level*"  "
@@ -916,101 +913,191 @@ def _indent(elem, level=0):
             elem.tail = i
     else:
         if level and (not elem.tail or not elem.tail.strip()):
-            elem.tail = i
+            elem.tail = i   
 
-def XML_merger(merged_xml_name, *xmls):
-    """ Function used for merging coverage metrics in XML format.
+def merge_coverage(logger, merged_file_name, *files):
+    """ Function used for merging coverage metrics in XML and YAML format.
 
     Args:
-        merged_xml_name (str): output XML name with .xml suffix
-        *xmls ((multiple) str): comma separated XML names with .xml suffix
+        logger (str): a logger function
+        merged_file_name (str): output filename
+        *files ((multiple) str): comma separated filenames to merge coverage from
 
     Example:
 
-    >>> XML_merger('merged.xml', 'one.xml', 'other.xml') # merge one and other
+    >>> coverage_merger('merged.xml', 'one.xml', 'other.xml') # merge one and other
     """
-    roots = [et.parse(xml).getroot() for xml in xmls]
-    merged_root = copy.deepcopy(roots[0])
-    # abs name to element mapping - merged items
-    name_to_elem = {el.attrib['abs_name']: el for el in merged_root.iter()}
+    from xml.etree import ElementTree as et
+    import yaml
 
-    def combine():
-        for root in roots[1:]:
-            combine_element(root)
-        _indent(merged_root) # pretty print format
-        et.ElementTree(merged_root).write(merged_xml_name)
+    l = len(files)
+    if l == 0:
+        raise ValueError('Coverage merger got no files to merge')
 
-    def combine_element(root):
-        # Elements not present in merged items
-        new_elements = [elem for elem in root.iter()
-                        if elem.attrib['abs_name'] not in name_to_elem.keys()]
-        # Sort descending
-        new_elements.sort(key=lambda _: _.attrib['abs_name'].count('.'))
-        # Bin list to be updated w/o bins not present in the merged
-        bin_list = [elem for elem in root.iter() if 'bin' in elem.tag
-                    and elem not in new_elements]
+    def try_to_parse(parser_func, f, on_error):
+        try:
+            parser_func(f)
+            return True
+        except on_error:
+            return False
 
-        def get_parent(abs_name):
+    def is_xml(f):
+        return try_to_parse(et.parse, f, et.ParseError)
+
+    def is_yaml(f):
+        return try_to_parse(yaml.safe_load, f, yaml.YAMLError)
+
+    if is_xml(files[0]):
+        filetype = 'xml'
+        dbs = [et.parse(f).getroot() for f in files]
+        logger(f'XML fileformat detected')
+
+    elif is_yaml(files[0]):
+        filetype = 'yaml'
+        def load_yaml(filename, logger):
+            with open(filename, 'r') as stream:
+                try:
+                    yaml_parsed = yaml.safe_load(stream)
+                except yaml.YAMLError as exc:
+                    logger(exc)   
+            return yaml_parsed
+        dbs = [load_yaml(f, logger) for f in files]
+        logger(f'YAML fileformat detected')
+
+    else:
+        raise ValueError('Coverage merger: unrecognized file format, provide yaml or xml')
+
+    merged_db = dbs[0]
+
+    def merge():
+        for db in dbs[1:]:
+            merge_element(db)
+        logger(f'Merged {l} {"file" if l==1 else "files"}')
+        if filetype == 'xml':
+            _indent(merged_db)
+            et.ElementTree(merged_db).write(merged_file_name)    
+        else:
+            with open(merged_file_name, 'w') as outfile:
+                yaml.dump(merged_db, outfile, default_flow_style=False)
+        logger(f'Saving coverage database as {merged_file_name}')
+
+    def merge_element(db):
+        if filetype == 'xml':
+            pre_merge_db_dict = {elem.attrib['abs_name']: elem for elem in merged_db.iter()}
+            name_to_elem = {el.attrib['abs_name']: el for el in merged_db.iter()}
+            # Elements to be added, sort descending
+            new_elements = [elem for elem in db.iter()
+                            if elem.attrib['abs_name'] not in name_to_elem.keys()]
+            new_elements.sort(key=lambda _: _.attrib['abs_name'].count('.'))
+            # Bins that will be updated
+            items_to_update = [elem for elem in db.iter() if 'bin' in elem.tag
+                               and elem not in new_elements] 
+        else:
+            pre_merge_db_keys = list(merged_db.keys())
+            new_elements = [elem_key for elem_key in db if elem_key not in merged_db]
+            # Elements with bins that will be updated
+            items_to_update = [elem_key for elem_key in db 
+                             if 'bins:_hits' in list(db[elem_key].keys())
+                             and elem_key not in new_elements]
+
+        def get_parent_name(abs_name):
             return '.'.join(abs_name.split('.')[:-1])
 
-        def update_parent(name, bin_update=False, new_element_update=False,
-                          coverage_update=0, size_update=0):
-            parent_name = get_parent(name)
-            if parent_name == '':
-                return # Top reached
-            else:
-                if new_element_update:
-                    coverage_update = int(
-                        name_to_elem[name].attrib['coverage'])
-                    size_update = int(
-                        name_to_elem[name].attrib['size'])
-                elif bin_update:
-                    coverage_update = int(
-                        name_to_elem[parent_name].attrib['weight'])
+        if filetype == 'xml':
+            def update_parent(name, bin_update=False, new_element_update=False,
+                              coverage_upd=0, size_upd=0,):
+                parent_name = get_parent_name(name)
+                if parent_name == '':
+                    return
+                else:
+                    if new_element_update:
+                        coverage_upd = int(
+                            name_to_elem[name].attrib['coverage'])
+                        size_upd = int(
+                            name_to_elem[name].attrib['size'])
+                    elif bin_update:
+                        coverage_upd = int(
+                            name_to_elem[parent_name].attrib['weight'])
+                        size_upd = 0
 
-                # Update current parent
-                name_to_elem[parent_name].attrib['coverage'] = str(int(
-                    name_to_elem[parent_name].attrib['coverage'])
-                    + coverage_update)
-                name_to_elem[parent_name].attrib['size'] = str(int(
-                    name_to_elem[parent_name].attrib['size'])+size_update)
-                name_to_elem[parent_name].attrib['cover_percentage'] = str(
-                    round((int(name_to_elem[parent_name].attrib['coverage'])
-                    *100/int(name_to_elem[parent_name].attrib['size'])), 2))
-                # Recursively update parents
-                update_parent(parent_name, False, False,
-                              coverage_update, size_update)
+                    # Update current parent
+                    name_to_elem[parent_name].attrib['coverage'] = str(int(
+                        name_to_elem[parent_name].attrib['coverage'])
+                        + coverage_upd)
+                    name_to_elem[parent_name].attrib['size'] = str(int(
+                        name_to_elem[parent_name].attrib['size'])+size_upd)
+                    name_to_elem[parent_name].attrib['cover_percentage'] = str(
+                        round((int(name_to_elem[parent_name].attrib['coverage'])
+                        *100/int(name_to_elem[parent_name].attrib['size'])), 2))
+                    # Recursively update parents
+                    update_parent(parent_name, False, False, coverage_upd,
+                                  size_upd)
+        else:
+            def update_parent(name, coverage_upd, size_upd=0):
+                parent = get_parent_name(name)
+                if parent == '':
+                    return
+                else:
+                    coverage = merged_db[parent]['coverage']
+                    size = merged_db[parent]['size']
+                    merged_db[parent]['coverage'] = coverage + coverage_upd
+                    if size_upd != 0:
+                        merged_db[parent]['size'] = size + size_upd
+                    merged_db[parent]['cover_percentage'] = round(merged_db[parent]['coverage']*100/merged_db[parent]['size'], 2)
+                    # Update up to the root
+                    update_parent(parent, coverage_upd, size_upd)
 
-        # Merge function body
-        # Extend merged with new elements in descending order
         for elem in new_elements:
-            abs_name = elem.attrib['abs_name']
-            parent_name = get_parent(abs_name)
-            name_to_elem[abs_name] = et.SubElement(
-                name_to_elem[parent_name], elem.tag, attrib=elem.attrib)
-            if 'bin' not in elem.tag:
-                update_parent(name=abs_name, bin_update=False, 
-                              new_element_update=True)
+            # Update parents only once per new cg/cp
+            if filetype == 'xml':
+                abs_name = elem.attrib['abs_name']
+                parent_name = get_parent_name(abs_name)
+                name_to_elem[abs_name] = et.SubElement(
+                    name_to_elem[parent_name], elem.tag, attrib=elem.attrib)
+                if parent_name in pre_merge_db_dict:
+                    update_parent(name=abs_name, bin_update=False, 
+                                  new_element_update=True)
+            else:
+                parent_name = get_parent_name(elem)
+                if elem not in merged_db.keys():
+                    merged_db[elem] = db[elem]
+                if parent_name in pre_merge_db_keys:
+                    update_parent(elem, db[elem]['coverage'], db[elem]['size'])
 
-        # Update bins already present in the XML
-        for bin_element in bin_list:
-            hits = int(bin_element.attrib['hits'])
-            if hits > 0:
-                abs_name = bin_element.attrib['abs_name']
-                hits_orig = int(name_to_elem[abs_name].attrib['hits'])
-                # Update the bin value
-                name_to_elem[abs_name].attrib['hits'] = str(hits+hits_orig)
-                # Check if upstream needs updating
-                parent_name = get_parent(abs_name)
-                parent_hits_threshold = int(
-                    name_to_elem[parent_name].attrib['at_least'])
+        # Update cps with bins / bins from the new db
+        for elem in items_to_update:
+            if filetype == 'xml':
+                hits = int(elem.attrib['hits'])
+                if hits > 0:
+                    abs_name = elem.attrib['abs_name']
+                    hits_orig = int(name_to_elem[abs_name].attrib['hits'])
+                    # Update the bin value
+                    name_to_elem[abs_name].attrib['hits'] = str(hits+hits_orig)
+                    # Check if upstream needs updating
+                    parent_name = get_parent_name(abs_name)
+                    parent_hits_threshold = int(
+                        name_to_elem[parent_name].attrib['at_least'])
                 if (hits_orig < parent_hits_threshold
-                        and hits_orig+hits >= parent_hits_threshold):
+                    and hits_orig+hits >= parent_hits_threshold):
                     update_parent(name=abs_name, bin_update=True,
                                   new_element_update=False)
-    
-    # Call combine function to merge XMLs
-    combine()
+            else:
+                new_hits_cnt = 0
+                weight = merged_db[elem]['weight']
+                at_least = merged_db[elem]['at_least']
+                for bin_name, hits in db[elem]['bins:_hits'].items():
+                    hits_orig = merged_db[elem]['bins:_hits'][bin_name]
+                    if (hits_orig < at_least and hits_orig+hits >= at_least):
+                        new_hits_cnt += 1
+                    merged_db[elem]['bins:_hits'][bin_name] += hits
+                if new_hits_cnt > 0:
+                    coverage_upd = weight*new_hits_cnt
+                    merged_db[elem]['coverage'] = merged_db[elem]['coverage']+coverage_upd
+                    merged_db[elem]['cover_percentage'] = round(
+                        merged_db[elem]['coverage']*100/merged_db[elem]['size'], 2)
+                    update_parent(elem, coverage_upd) # update cover recursively 
+
+    merge()
 
 # deprecated
 
@@ -1029,5 +1116,3 @@ def coverageSection(*coverItems):
         "Function coverageSection() is deprecated, use coverage_section() instead"
     )
     return coverage_section(*coverItems)
-
-

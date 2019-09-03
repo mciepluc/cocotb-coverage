@@ -1,4 +1,3 @@
-
 import cocotb
 import pytest
 import coverage_test
