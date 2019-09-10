@@ -925,7 +925,7 @@ def merge_coverage(logger, merged_file_name, *files):
 
     Example:
 
-    >>> coverage_merger('merged.xml', 'one.xml', 'other.xml') # merge one and other
+    >>> merge_coverage('merged.xml', 'one.xml', 'other.xml') # merge one and other
     """
     from xml.etree import ElementTree as et
     import yaml
