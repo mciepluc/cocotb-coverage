@@ -41,7 +41,7 @@ Functions:
 
 * :func:`~.coverage_section` - allows for convenient definition of multiple
   coverage items and combines them into a single decorator.
-* :func:`~.XML_merger` - merges coverage databases saved in XML format. 
+* :func:`~.merge_coverage` - merges coverage files in XML or YAML format. 
 """
 
 from functools import wraps
