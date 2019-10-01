@@ -242,7 +242,7 @@ def test_xml_export():
         
     #coverage.coverage_db.report_coverage(print, bins=False)
     
-    #Export coverage to XML, check if file exists
+    # Export coverage to XML, check if file exists
     xml_filename = 'test_xml_export_output.xml'
     yml_filename = 'test_yaml_export_output.yml'
     coverage.coverage_db.export_to_xml(filename='test_xml_export_output.xml')
@@ -250,9 +250,9 @@ def test_xml_export():
     assert os.path.isfile(xml_filename)
     assert os.path.isfile(yml_filename)
     
-    #Read back the XML           
+    # Read back the XML           
     xml_db = et.parse(xml_filename).getroot()
-    #dict - child: [all parents for that name]
+    # dict - child: [all parents for that name]
     child_parent_dict = {} 
     for p in xml_db.iter():
         for c in p:
@@ -262,7 +262,7 @@ def test_xml_export():
                 else:
                     child_parent_dict[c.tag].append(p.tag)
      
-    #Check if coverage_db items are XML, with proper parents
+    # Check if coverage_db items are XML, with proper parents
     for item in coverage.coverage_db:
         if '.' in item:
             item_elements = item.split('.')
@@ -270,17 +270,17 @@ def test_xml_export():
             for elem_parent, elem in zip(item_elements, item_elements[1:]):
                 assert elem_parent in child_parent_dict[elem]
 
-    #Check YML
+    # Check YML
     yml_db = yaml.full_load(open(yml_filename, 'r'))
     for item in yml_db:
         if isinstance(coverage.coverage_db[item], coverage.CoverPoint):
             #assert if correct coverage levels
             assert yml_db[item]['coverage'] == coverage.coverage_db[item].coverage
 
-    #check if yaml and coverage databases have equal size
+    # check if yaml and coverage databases have equal size
     assert len(yml_db) == len(coverage.coverage_db) 
 
-# test xml merge - static example covering 
+# test xml/yaml merge - static example covering 
 # adding new elements and updating existing
 def test_xml_merge():
     import os.path
@@ -288,15 +288,36 @@ def test_xml_merge():
     print("Running test_xml_merge")
     filename = 'test_xml_merge_output.xml'
 
-    coverage.XML_merger(filename, 'short1.xml', 'short2.xml', 'short3.xml')
+    coverage.merge_coverage(print, filename, 'short1.xml', 'short2.xml', 'short3.xml')
     assert os.path.isfile(filename)
     
-    #Read back the XML           
+    # Read back the XML           
     xml_db = et.parse(filename).getroot()
     assert xml_db.tag == 'top'
     assert xml_db.attrib['coverage'] == '102'
     assert xml_db.attrib['size'] == '104'
+    
+def test_yaml_merge():
+    import os.path
+    import yaml
+    print("Running test_yaml_merge")
+    filename = 'test_yaml_merge_output.yml'
 
+    coverage.merge_coverage(print, filename, 'coverage1.yml', 'coverage2.yml',
+                            'coverage3.yml')
+    
+    assert os.path.isfile(filename)
+    
+    #Read back the XML
+    with open(filename, 'r') as stream:
+        try:
+            yaml_parsed = yaml.safe_load(stream)
+        except yaml.YAMLError as exc:
+            print(exc)
+            
+    assert yaml_parsed['top']['coverage'] == 52
+    assert yaml_parsed['top']['size'] == 122
+    assert 'top.coveritemm.signall.cp10' in list(yaml_parsed.keys())
 
 #test covercheck
 def test_covercheck():

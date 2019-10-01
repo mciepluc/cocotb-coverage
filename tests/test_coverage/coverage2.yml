@@ -1,0 +1,84 @@
+top:
+  cover_percentage: 40.28
+  coverage: 29
+  size: 72
+  type: <class 'cocotb_coverage.coverage.CoverItem'>
+top.covercross:
+  cover_percentage: 30.0
+  coverage: 3
+  size: 10
+  type: <class 'cocotb_coverage.coverage.CoverItem'>
+top.covercross.cr0:
+  at_least: 1
+  bins:_hits:
+    ((0, 5), 0): 1
+    ((0, 5), 1): 1
+    ((0, 5), 2): 0
+    ((0, 5), 3): 0
+    ((0, 5), 4): 0
+    ((5, 10), 0): 0
+    ((5, 10), 1): 0
+    ((5, 10), 2): 0
+    ((5, 10), 3): 0
+    ((5, 10), 4): 1
+  cover_percentage: 30.0
+  coverage: 3
+  size: 10
+  type: <class 'cocotb_coverage.coverage.CoverCross'>
+  weight: 1
+top.coveritem:
+  cover_percentage: 41.94
+  coverage: 26
+  size: 62
+  type: <class 'cocotb_coverage.coverage.CoverItem'>
+top.coveritem.config:
+  cover_percentage: 0.0
+  coverage: 0
+  size: 2
+  type: <class 'cocotb_coverage.coverage.CoverItem'>
+top.coveritem.config.cp0:
+  at_least: 5
+  bins:_hits:
+    (0, 5): 4
+    (5, 10): 3
+  cover_percentage: 0.0
+  coverage: 0
+  size: 2
+  type: <class 'cocotb_coverage.coverage.CoverPoint'>
+  weight: 1
+top.coveritem.signal:
+  cover_percentage: 43.33
+  coverage: 26
+  size: 60
+  type: <class 'cocotb_coverage.coverage.CoverItem'>
+top.coveritem.signal.cp1:
+  at_least: 1
+  bins:_hits:
+    0: 1
+    1: 0
+    2: 0
+    3: 0
+    4: 1
+  cover_percentage: 40.0
+  coverage: 20
+  size: 50
+  type: <class 'cocotb_coverage.coverage.CoverPoint'>
+  weight: 10
+top.coveritem.signal.cp2:
+  at_least: 1
+  bins:_hits:
+    0: 1
+    1: 0
+    2: 0
+    3: 0
+    4: 0
+    5: 1
+    6: 1
+    7: 1
+    8: 1
+    9: 1
+  cover_percentage: 60.0
+  coverage: 6
+  size: 10
+  type: <class 'cocotb_coverage.coverage.CoverPoint'>
+  weight: 1
