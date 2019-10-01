@@ -51,6 +51,7 @@ import operator
 import itertools
 import warnings
 import copy
+import threading
 from xml.etree import ElementTree as et
 
 
@@ -73,10 +74,13 @@ class CoverageDB(dict):
     >>> CoverageDB()["top.b.cp1"] #access specific coverpoint
     """
     _instance = None
+    _lock = threading.Lock()
 
     def __new__(class_, *args, **kwargs):
         if not isinstance(class_._instance, class_):
-            class_._instance = dict.__new__(class_, *args, **kwargs)
+            with class_._lock:
+                if not isinstance(class_._instance, class_):
+                    class_._instance = dict.__new__(class_, *args, **kwargs)
         return class_._instance
 
     def report_coverage(self, logger, bins=False, node=""):
