@@ -288,7 +288,7 @@ def test_xml_merge():
     print("Running test_xml_merge")
     filename = 'test_xml_merge_output.xml'
 
-    coverage.merge_coverage(print, filename, 'short1.xml', 'short2.xml', 'short3.xml')
+    coverage.merge_coverage(print, filename, 'cov_short1_input.xml', 'cov_short2_input.xml', 'cov_short3_input.xml')
     assert os.path.isfile(filename)
     
     # Read back the XML           
@@ -303,8 +303,8 @@ def test_yaml_merge():
     print("Running test_yaml_merge")
     filename = 'test_yaml_merge_output.yml'
 
-    coverage.merge_coverage(print, filename, 'coverage1.yml', 'coverage2.yml',
-                            'coverage3.yml')
+    coverage.merge_coverage(print, filename, 'coverage1_input.yml', 'coverage2_input.yml',
+                            'coverage3_input.yml')
     
     assert os.path.isfile(filename)
     
