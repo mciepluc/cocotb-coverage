@@ -284,3 +284,28 @@ def test_post_randomize():
               (foo.x, foo.y, foo.z, foo.n))
         
     assert foo.n > 5
+
+def test_issue28():
+    print("Test issue28")
+
+    class Foo(crv.Randomized):
+        def __init__(self):
+            crv.Randomized.__init__(self)
+            self.dac_max = 0
+            self.dac_min = 0
+
+            self.add_rand("dac_max",         list(range(16)))
+            self.add_rand("dac_min",         list(range(16)))
+            self.add_constraint(lambda dac_max, dac_min : dac_max > dac_min   )
+
+    foo = Foo()
+
+    for _ in range(5):
+        #foo.randomize()
+        #assert foo.dac_max > foo.dac_min
+        foo.randomize_with(lambda dac_max : dac_max == 8)
+        assert foo.dac_max == 8
+        assert foo.dac_max > foo.dac_min
+        foo.randomize_with(lambda dac_max : dac_max == 8, lambda dac_min : dac_min == 2)
+        assert foo.dac_max == 8
+        assert foo.dac_min == 2

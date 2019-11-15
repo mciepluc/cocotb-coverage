@@ -263,7 +263,18 @@ class Randomized(object):
 
         >>> del_constraint(highdelay_cstr)
         """
-        return self._del_constraint(cstr, self._randVariables)
+        self._simpleConstraints = {
+          k : v for k, v in self._simpleConstraints.items() if v != cstr
+        }
+        self._simpleDistributions = {
+          k : v for k, v in self._simpleDistributions.items() if v != cstr
+        }
+        self._implConstraints = {
+          k : v for k, v in self._implConstraints.items() if v != cstr
+        }
+        self._implDistributions = {
+          k : v for k, v in self._implDistributions.items() if v != cstr
+        }
 
     def pre_randomize(self):
         """A function that is called before 
@@ -353,7 +364,9 @@ class Randomized(object):
                 _map[_key] = cstr
                 return overwriting
 
-            if type(ret) is bool:
+            #PEP will complain, but it may be np.bool_ type!!!!
+            #if type(ret) is bool:
+            if ((str(ret) == "True") or (str(ret) == "False")):
                 # this is a constraint
                 if (len(rand_variables) == 1):
                     overwriting = _addToMap(
@@ -371,35 +384,6 @@ class Randomized(object):
                         tuple(rand_variables), self._implDistributions)
 
             return overwriting
-
-    def _del_constraint(self, cstr, rvars):
-        """Delete a constraint for a specific random variables list
-        (which determines a type of a constraint - simple or implicit).
-        """
-        if isinstance(cstr, constraint.Constraint):
-            # could be a Constraint object...
-            pass
-        else:
-            variables = inspect.signature(cstr).parameters
-
-            rand_variables = [
-                var for var in variables if var in rvars]
-
-            if (len(rand_variables) == 1):
-                if rand_variables[0] in self._simpleConstraints:
-                    del self._simpleConstraints[rand_variables[0]]
-                elif rand_variables[0] in self._simpleDistributions:
-                    del self._simpleDistributions[rand_variables[0]]
-                else:
-                    assert(0), "Could not delete a constraint!"
-            else:
-                if tuple(rand_variables) in self._implConstraints:
-                    del self._implConstraints[tuple(rand_variables)]
-                elif tuple(rand_variables) in self._implDistributions:
-                    del self._implDistributions[tuple(rand_variables)]
-                else:
-                    assert(0), "Could not delete a constraint!"
-
 
     def _randomize(self):
         """Call :meth:`_resolve` and 
@@ -467,6 +451,7 @@ class Randomized(object):
                 #delete all constraints and add back but considering only
                 #limited list of random vars
                 actualCstr = []
+
                 for f_cstr in allConstraints:
                     self.del_constraint(f_cstr)
                     f_cstr_args = inspect.signature(f_cstr).parameters
@@ -491,7 +476,7 @@ class Randomized(object):
 
                 #add back everything as it was before this stage
                 for f_cstr in actualCstr:
-                    self._del_constraint(f_cstr, newRandVariables)
+                    self.del_constraint(f_cstr)
 
                 for f_cstr in allConstraints:
                     self._add_constraint(f_cstr, self._randVariables)
@@ -663,34 +648,32 @@ class Randomized(object):
                     # random variable has no defined distribution function -
                     # call simple random.choice
                     solution[dvar] = random.choice(domain)
-
         return solution
 
     def _weighted_choice(self, solutions, weights):
         """Get a solution from the list with defined weights."""
-        try:
-            import numpy
-            # pick weighted random
-            return numpy.random.choice(solutions, size=1, p=weights)
-        except:
-            # if numpy not available
-            non_zero_weights = [x for x in weights if x > 0]
+        result = None
+        non_zero_weights = [x for x in weights if x > 0]
+        if non_zero_weights:
+            try:
+                if len(solutions) != 0:
+                    import numpy
+                    # pick weighted random
+                    weights_norm = [_/sum(weights) for _ in weights]
+                    result = numpy.random.choice(solutions, p=weights_norm)
+            except ImportError:
+                # if numpy not available
+                min_weight = min(non_zero_weights)
+                weighted_solutions = []
 
-            if not non_zero_weights:
-                return None
-
-            min_weight = min(non_zero_weights)
-
-            weighted_solutions = []
-
-            for x in range(len(solutions)):
-                # insert each solution to the list multiple times
-                weighted_solutions.extend(
-                    [solutions[x] for _ in range(
-                        int(weights[x] * (1.0 / min_weight)))
-                     ])
-
-            return random.choice(weighted_solutions)
+                for x in range(len(solutions)):
+                    # insert each solution to the list multiple times
+                    weighted_solutions.extend(
+                        [solutions[x] for _ in range(
+                            int(weights[x] * (1.0 / min_weight)))
+                         ])
+                result = random.choice(weighted_solutions)
+        return result
 
     def _update_variables(self, solution):
         """Update members of the final class after randomization."""
