@@ -64,6 +64,8 @@ def test_simple_coverpoint():
         assert coverage.coverage_db["top.t1.c1"].detailed_coverage[i] == 1
 
     #coverage.coverage_db.report_coverage(print, bins=False)
+    coverage.coverage_db.export_to_ucis(filename="ucis_simple_coverpoint.xml")
+
 
 class FooBar():
     def __init__(self):
@@ -95,6 +97,7 @@ def test_coverpoint_in_class():
     assert coverage.coverage_db["top.t2.in_class"].detailed_coverage["foo"] == 1 
     assert coverage.coverage_db["top.t2.in_class"].detailed_coverage["bar"] == 2 
   
+    coverage.coverage_db.export_to_ucis(filename="ucis_coverpoint_in_class.xml")
 
 #injective coverpoint - matching multiple bins at once
 def test_injective_coverpoint():
@@ -115,6 +118,9 @@ def test_injective_coverpoint():
     assert coverage.coverage_db["top.t3.inj"].coverage == 5 
     sample(77) #covers 7 and 11
     assert coverage.coverage_db["top.t3.inj"].coverage == 7 
+
+    coverage.coverage_db.export_to_ucis(filename="ucis_injective_coverpoint.xml")
+
 
 #cross
 def test_covercross():
@@ -150,6 +156,7 @@ def test_covercross():
     assert coverage.coverage_db["top.t4.cross3"].size == 90
     assert coverage.coverage_db["top.t4.cross3"].coverage == 0 #expect nothing covered
 
+    coverage.coverage_db.export_to_ucis(filename="ucis_covercross.xml")
 
 #test at least and weight
 def test_at_least_and_weight():
@@ -179,6 +186,9 @@ def test_at_least_and_weight():
     sample(0, 0) #sample one more time to make sure cross satisfies "at_least" condition
     assert coverage.coverage_db["top.t5.cross"].coverage == 1
 
+    coverage.coverage_db.export_to_ucis(filename="ucis_at_least_and_weight.xml")
+
+    
 #test callbacks
 def test_callbacks():
     print("Running test_callbacks")
@@ -220,6 +230,9 @@ def test_callbacks():
     assert cb2_fired[0]
     assert cb3_fired[0]
 
+    coverage.coverage_db.export_to_ucis(filename="ucis_callbacks.xml")
+
+    
 #test xml export
 def test_xml_export():
     import os.path
@@ -244,8 +257,10 @@ def test_xml_export():
     
     # Export coverage to XML, check if file exists
     xml_filename = 'test_xml_export_output.xml'
+    ucis_filename = 'test_xml_export_output_ucis.xml'
     yml_filename = 'test_yaml_export_output.yml'
     coverage.coverage_db.export_to_xml(filename='test_xml_export_output.xml')
+    coverage.coverage_db.export_to_ucis(filename='test_xml_export_output_ucis.xml')
     coverage.coverage_db.export_to_yaml(filename='test_yaml_export_output.yml')
     assert os.path.isfile(xml_filename)
     assert os.path.isfile(yml_filename)

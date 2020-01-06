@@ -41,7 +41,7 @@ Functions:
 
 * :func:`~.coverage_section` - allows for convenient definition of multiple
   coverage items and combines them into a single decorator.
-* :func:`~.merge_coverage` - merges coverage files in XML or YAML format. 
+* :func:`~.merge_coverage` - merges coverage files in XML or YAML format.
 """
 
 from functools import wraps
@@ -52,6 +52,8 @@ import itertools
 import warnings
 import copy
 import threading
+from datetime import datetime, timezone
+from contextlib import suppress
 
 class CoverageDB(dict):
     """ Class (singleton) containing coverage database.
@@ -117,7 +119,7 @@ class CoverageDB(dict):
             attrib_dict['coverage'] = self[name_elem_full].coverage
             attrib_dict['cover_percentage'] = round(self[name_elem_full].cover_percentage, 2)
 
-            if (type(self[name_elem_full]) is not CoverItem):
+            if type(self[name_elem_full]) is not CoverItem:
                 attrib_dict['weight'] = self[name_elem_full].weight
                 attrib_dict['at_least'] = self[name_elem_full].at_least
 
@@ -165,7 +167,7 @@ class CoverageDB(dict):
             attrib_dict['cover_percentage'] = str(round(
                 self[name_elem_full].cover_percentage, 2))
             attrib_dict['abs_name'] = prefix+name_elem_full
-            if (type(self[name_elem_full]) is not CoverItem):
+            if type(self[name_elem_full]) is not CoverItem:
                 attrib_dict['weight'] = str(self[name_elem_full].weight)
                 attrib_dict['at_least'] = str(
                     self[name_elem_full].at_least)
@@ -221,6 +223,242 @@ class CoverageDB(dict):
         _indent(root)
         et.ElementTree(xml_db_dict['top']).write(filename)
 
+    def export_to_ucis(self, filename='coverage_ucis.xml'):
+        """Export coverage_db to UCIS XML document.
+
+        Args:
+            filename (str): output document name with .xml suffix
+        """
+        from cocotb_coverage import __version__
+        import getpass
+        from xml.etree import ElementTree as et
+        xml_db_dict = {}
+
+        now = datetime.now(tz=timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+
+        def create_top():
+            attrib_dict = {
+                "xmlns:ucis": "http://www.w3.org/2001/XMLSchema-instance",
+                "ucisVersion": "1.0",
+                "writtenBy": getpass.getuser(),
+                "writtenTime": now,
+            }
+            xml_db_dict["top"] = et.Element("ucis:UCIS", attrib=attrib_dict)
+
+            attrib_dict = dict(
+                fileName="myfilename",
+                id="1",
+            )
+            xml_db_dict["sourceFiles"] = et.SubElement(xml_db_dict["top"], "ucis:sourceFiles", attrib=attrib_dict)
+
+            attrib_dict = dict(
+                historyNodeId="1",
+                testStatus="true",
+                date=now,
+                toolCategory="UCIS:Simulator",
+                ucisVersion="1.0",
+                vendorId="Marek Cieplucha",
+                vendorTool="cocotb-coverage",
+                vendorToolVersion=__version__,
+                logicalName="FIXME",
+                physicalName=__file__,
+            )
+            xml_db_dict["historyNodes"] = et.SubElement(xml_db_dict["top"], "ucis:historyNodes", attrib=attrib_dict)
+
+            # see https://github.com/amiq-consulting/fc4sc/blob/master/tools/ucis_parser.py for their DB hierarchy
+            for name_elem_full in sorted(self, key=str.lower):
+                attrib_dict = dict(
+                    name="name string",
+                    key="1",
+                    instanceId="2",
+                    # alias="alias string",
+                    moduleName="Module "+name_elem_full,  # NOTE: fc4sc uses this as "Covergroup types"
+                    parentInstanceId="0",
+                )
+                xml_db_dict["instanceCoverages"] = et.SubElement(xml_db_dict["top"], "ucis:instanceCoverages", attrib=attrib_dict)
+
+                attrib_dict = dict(
+                    file="0",
+                    line="0",
+                    inlineCount="0",
+                )
+                xml_db_dict["id"] = et.SubElement(xml_db_dict["instanceCoverages"], "ucis:id", attrib=attrib_dict)
+
+                attrib_dict = dict(
+                    weight="1",
+                )
+                xml_db_dict["covergroupCoverage"] = et.SubElement(xml_db_dict["instanceCoverages"], "ucis:covergroupCoverage", attrib=attrib_dict)
+
+                if type(self[name_elem_full]) is not CoverItem:
+                    attrib_dict = dict(
+                        name="Covergroup Instance "+name_elem_full,
+                        key="0",
+                        # alias="alias string",
+                        excluded="false",
+                    )
+                    xml_db_dict["cgInstance"] = et.SubElement(xml_db_dict["covergroupCoverage"], "ucis:cgInstance", attrib=attrib_dict)
+
+                    attrib_dict = dict(
+                        weight="1",
+                        goal="100",
+                        comment="",
+                        at_least="1",
+                        auto_bin_max="10",
+                        detect_overlap="0",
+                        cross_num_print_missing="0",
+                        per_instance="0",
+                    )
+                    xml_db_dict["options"] = et.SubElement(xml_db_dict["cgInstance"], "ucis:options", attrib=attrib_dict)
+
+                    attrib_dict = dict(
+                        cgName="cgName string",
+                        moduleName="INST_PARENT_MODULE",
+                    )
+                    xml_db_dict["cgId"] = et.SubElement(xml_db_dict["cgInstance"], "ucis:cgId", attrib=attrib_dict)
+
+                    attrib_dict = dict(
+                        file="1",
+                        line="1",
+                        inlineCount="1",
+                    )
+                    xml_db_dict["cginstSourceId"] = et.SubElement(xml_db_dict["cgId"], "ucis:cginstSourceId", attrib=attrib_dict)
+
+                    attrib_dict = dict(
+                        file="1",
+                        line="1",
+                        inlineCount="1",
+                    )
+                    xml_db_dict["cgSourceId"] = et.SubElement(xml_db_dict["cgId"], "ucis:cgSourceId", attrib=attrib_dict)
+
+                if type(self[name_elem_full]) is not CoverItem:
+                    # print(dir(self[name_elem_full]))
+                    # '_at_least', '_bins_callbacks', '_bins_labels', '_children', '_coverage', '_decorates_method', '_hits',
+                    # '_injection', '_name', '_new_hits', '_parent', '_relation', '_size', '_threshold_callbacks',
+                    # '_trans_is_method', '_transformation', '_update_coverage', '_update_size', '_vname', '_weight',
+                    # 'add_bins_callback', 'add_threshold_callback', 'at_least', 'cover_percentage',
+                    # 'coverage', 'detailed_coverage', 'new_hits', 'size', 'weight'
+
+                    # bin matching according to "relation(var, bins) = True"
+                    _exprString = ""
+                    with suppress(Exception):
+                        # variable name
+                        _vname = self[name_elem_full]._vname
+                        if _vname is not None:
+                            _exprString += "var: "+str(_vname)
+
+                            xml_db_dict["userAttr"] = et.SubElement(
+                                xml_db_dict["coverpoint"], "ucis:userAttr",
+                                attrib={"key": "vname", "type": "string"})
+                            xml_db_dict["userAttr"].text = str(_vname)
+
+                    with suppress(Exception):
+                        # transformation
+                        _xf_name = str(self[name_elem_full]._transformation.__name__)
+                        if _xf_name != "dummy_f":
+                            _exprString += " xf: "+_xf_name
+
+                            xml_db_dict["userAttr"] = et.SubElement(
+                                xml_db_dict["coverpoint"], "ucis:userAttr",
+                                attrib={"key": "xf", "type": "string"})
+                            xml_db_dict["userAttr"].text = _xf_name
+
+                    with suppress(Exception):
+                        # relation
+                        _rel_name = str(self[name_elem_full]._relation.__name__)
+                        if _rel_name != "eq":
+                            _exprString += " rel: "+_rel_name
+
+                            xml_db_dict["userAttr"] = et.SubElement(
+                                xml_db_dict["coverpoint"], "ucis:userAttr",
+                                attrib={"key": "rel", "type": "string"})
+                            xml_db_dict["userAttr"].text = _rel_name
+
+                    attrib_dict = dict(
+                        name="Coverpoint "+name_elem_full,
+                        key="KEY",
+                        exprString=_exprString
+                    )
+                    xml_db_dict["coverpoint"] = et.SubElement(xml_db_dict["cgInstance"], "ucis:coverpoint", attrib=attrib_dict)
+
+                    attrib_dict = dict(
+                        goal="100",
+                        comment="comment string",
+                        auto_bin_max="10",
+                        detect_overlap="0",
+                    )
+                    attrib_dict['weight'] = str(self[name_elem_full].weight)
+                    attrib_dict['at_least'] = str(self[name_elem_full].at_least)
+                    xml_db_dict["coverpoint_opts"] = et.SubElement(xml_db_dict["coverpoint"], "ucis:options", attrib=attrib_dict)
+
+                    bins = []
+                    hits = []
+                    for key, value in self[name_elem_full].detailed_coverage.items():
+                        if hasattr(key, '__iter__'):  # convert iterables to string
+                            key = str(key)
+                        bins.append(key)
+                        hits.append(value)
+
+                    for bin, hit in zip(bins, hits):
+                        if hit < self[name_elem_full].at_least:
+                            flag = "(<{}) ".format(self[name_elem_full].at_least)
+                        else:
+                            flag = ""
+
+                        attrib_dict = dict(
+                            # name="coverpointBin_{}".format(str(bin)),
+                            name=flag+"Bin {}".format(str(bin)),
+                            key="0",
+                            # FIXME: support ignore/illegal too
+                            type="default",  # valid values: default/ignore/illegal
+                            # NOTE: "alias" appears to be used to detect covered/not covered by fc4sc:
+                            #       https://github.com/amiq-consulting/fc4sc/blob/master/tools/gui/fc4sc/js/bin.js#L30
+                            alias="{!r}".format(hit),
+                        )
+                        xml_db_dict["coverpointBin"] = et.SubElement(xml_db_dict["coverpoint"], "ucis:coverpointBin", attrib=attrib_dict)
+
+                        # NOTE: ranges where "from" and "to" are different can only be expressed with rel() in cocotb-coverage
+                        attrib_dict = {
+                            "from": str(bin),
+                            "to": str(bin),
+                        }
+                        xml_db_dict["range"] = et.SubElement(xml_db_dict["coverpointBin"], "ucis:range", attrib=attrib_dict)
+
+                        attrib_dict = dict(
+                            coverageCount="{!r}".format(hit),
+                        )
+                        xml_db_dict["contents"] = et.SubElement(xml_db_dict["range"], "ucis:contents", attrib=attrib_dict)
+
+                        # xml_db_dict["sequence"] = et.SubElement(xml_db_dict["coverpointBin"], "ucis:sequence")
+                        #
+                        # attrib_dict = dict(
+                        #     coverageCount="{!r}".format(hit),
+                        # )
+                        # xml_db_dict["contents"] = et.SubElement(xml_db_dict["sequence"], "ucis:contents", attrib=attrib_dict)
+                        # xml_db_dict["seqValue"] = et.SubElement(xml_db_dict["sequence"], "ucis:seqValue")
+                        # xml_db_dict["seqValue"].text=str(hit)
+
+                        # TODO: find best fitting type over all hits?
+                        if isinstance(hit, float):
+                            hit_type = "float"
+                        elif isinstance(hit, int):
+                            hit_type = "int"
+                        else:
+                            hit_type = "string"
+
+                        attrib_dict = {
+                            "key": "bin"+repr(bin),
+                            "type": hit_type,  # valid values: string/int/int64/float/double/bits
+                            # "len": len(val),  # optional
+                        }
+                        xml_db_dict["userAttr"] = et.SubElement(xml_db_dict["coverpointBin"], "ucis:userAttr", attrib=attrib_dict)
+                        xml_db_dict["userAttr"].text = repr(hit)
+
+        # ======================== Function body ==============================
+        create_top()
+        root = et.ElementTree(xml_db_dict['top']).getroot()
+        _indent(root)
+        et.ElementTree(xml_db_dict['top']).write(filename)
+
 # global variable collecting coverage in a prefix tree (trie)
 coverage_db = CoverageDB()
 """ Instance of the :class:`CoverageDB`."""
@@ -231,7 +469,7 @@ class CoverItem(object):
     ``CoverItem`` objects are created automatically. This is a base class for
     all coverage primitives (:class:`CoverPoint`, :class:`CoverCross` or
     :class:`CoverCheck`). It may be used as a base class for other,
-    user-defined coverage types. 
+    user-defined coverage types.
     """
 
     def __init__(self, name):
@@ -259,7 +497,7 @@ class CoverItem(object):
         coverage_db[name] = self
 
     def _update_coverage(self, coverage):
-        """Update the parent coverage level as requested by derived classes. 
+        """Update the parent coverage level as requested by derived classes.
         """
         current_coverage = self._coverage
         self._coverage += coverage
@@ -273,23 +511,23 @@ class CoverItem(object):
                 self._threshold_callbacks[ii]()
 
     def _update_size(self, size):
-        """Update the parent size as requested by derived classes. 
+        """Update the parent size as requested by derived classes.
         """
         self._size += size
         if self._parent is not None:
             self._parent._update_size(size)
 
     def add_threshold_callback(self, callback, threshold):
-        """Add a threshold callback to the :class:`CoverItem` or any its 
-        derived class. 
+        """Add a threshold callback to the :class:`CoverItem` or any its
+        derived class.
 
-        A callback is called (once) when the threshold is crossed, so that 
-        coverage level of this particular cover group (or other object) exceeds 
-        defined % value. 
+        A callback is called (once) when the threshold is crossed, so that
+        coverage level of this particular cover group (or other object) exceeds
+        defined % value.
 
         Args:
             callback (func): a callback function.
-            threshold (int): a callback call threshold (% coverage). 
+            threshold (int): a callback call threshold (% coverage).
 
         Examples:
 
@@ -310,11 +548,11 @@ class CoverItem(object):
     def add_bins_callback(self, callback, bins):
         """Add a bins callback to the derived class of the :class:`CoverItem`.
 
-        A callback is called (once) when a specific bin is covered. 
+        A callback is called (once) when a specific bin is covered.
 
         Args:
             callback (func): a callback function.
-            bins: a particular bin (type depends on bins type). 
+            bins: a particular bin (type depends on bins type).
 
         Examples:
 
@@ -332,7 +570,7 @@ class CoverItem(object):
         """Return size of the coverage primitive.
 
         Size of the cover group (or other coverage primitive) is returned. This
-        is a total number of bins associated with assigned weights. 
+        is a total number of bins associated with assigned weights.
 
         Returns:
             int: size of the coverage primitive.
@@ -343,9 +581,9 @@ class CoverItem(object):
     def coverage(self):
         """Return size of the covered bins in the coverage primitive.
 
-        Number of the covered bins in cover group (or other coverage primitive) 
-        is returned. This is a number of covered bins associated with assigned 
-        weights. 
+        Number of the covered bins in cover group (or other coverage primitive)
+        is returned. This is a number of covered bins associated with assigned
+        weights.
 
         Returns:
             int: size of the covered bins.
@@ -356,7 +594,7 @@ class CoverItem(object):
     def cover_percentage(self):
         """Return coverage level of the coverage primitive.
 
-        Percent of the covered bins in cover group (or other coverage 
+        Percent of the covered bins in cover group (or other coverage
         primitive) is returned. This is basically a :meth:`coverage()` divided
         by :meth:`size()` in %.
 
@@ -371,7 +609,7 @@ class CoverItem(object):
         of hits. If labels are assigned to bins, labels are returned instead
         of bins values.
 
-        A dictionary (bins) -> (number of hits) is returned. 
+        A dictionary (bins) -> (number of hits) is returned.
 
         Returns:
             dict: dictionary associating number of hits with a particular bins.
@@ -383,7 +621,7 @@ class CoverItem(object):
 
     @property
     def new_hits(self):
-        """Return bins hit at last sampling event. Works only for objects 
+        """Return bins hit at last sampling event. Works only for objects
         deriving from :class:`CoverItem`.
 
         Returns:
@@ -394,7 +632,7 @@ class CoverItem(object):
 
     @property
     def weight(self):
-        """Return weight of the coverage primitive. Works only for objects 
+        """Return weight of the coverage primitive. Works only for objects
         deriving from :class:`CoverItem`.
 
         Returns:
@@ -404,7 +642,7 @@ class CoverItem(object):
 
     @property
     def at_least(self):
-        """Return ``at_least`` attribute of the coverage primitive. Works only 
+        """Return ``at_least`` attribute of the coverage primitive. Works only
         for objects deriving from :class:`CoverItem`.
 
         Returns:
@@ -414,46 +652,46 @@ class CoverItem(object):
 
 
 class CoverPoint(CoverItem):
-    """Class used to create coverage points as decorators. 
+    """Class used to create coverage points as decorators.
 
-    This decorator samples members of the decorated function (its signature). 
+    This decorator samples members of the decorated function (its signature).
     Sampling matches predefined bins according to the rule:
     ``rel(xf(args), bin) == True``
 
     Args:
-        name (str): a ``CoverPoint`` path and name, defining its position in a 
+        name (str): a ``CoverPoint`` path and name, defining its position in a
             coverage trie.
-        vname (str, optional): a name of the variable to be covered (use this 
+        vname (str, optional): a name of the variable to be covered (use this
             only when covering a *single* variable in the decorated function
             signature).
-        xf (func, optional): a transformation function which transforms 
-            arguments of the decorated function. If ``vname`` and ``xf`` are 
-            not defined, matched is a single input argument (if only one 
-            exists) or a tuple (if multiple exist). Note that the ``self`` 
-            argument is *always* removed from the argument list. 
-        bins (list): a list of bins objects to be matched. Note that for 
-            non-trivial types, a ``rel`` must always be defined (or the 
+        xf (func, optional): a transformation function which transforms
+            arguments of the decorated function. If ``vname`` and ``xf`` are
+            not defined, matched is a single input argument (if only one
+            exists) or a tuple (if multiple exist). Note that the ``self``
+            argument is *always* removed from the argument list.
+        bins (list): a list of bins objects to be matched. Note that for
+            non-trivial types, a ``rel`` must always be defined (or the
             equality operator must be overloaded).
         bins_labels (list, optional): a list of labels (str) associated with
             defined bins. Both lists lengths must match.
-        rel (func, optional): a relation function which defines the bins 
+        rel (func, optional): a relation function which defines the bins
             matching relation (by default, the equality operator ``==``).
         weight (int, optional): a ``CoverPoint`` weight (by default ``1``).
-        at_least (int, optional): the number of hits per bins to be considered 
+        at_least (int, optional): the number of hits per bins to be considered
             as covered (by default ``1``).
-        inj (bool, optional): "injection" feature, defines that more than a 
+        inj (bool, optional): "injection" feature, defines that more than a
             single bin can be matched at one sampling (default ``False``).
 
     Example:
 
     >>> @coverage.CoverPoint( # cover (arg/2) < 1...5 (5 bins)
-    ...     name = "top.parent.coverpoint1", 
-    ...     xf = lambda x : x/2, 
-    ...     rel = lambda x, y : x < y, 
+    ...     name = "top.parent.coverpoint1",
+    ...     xf = lambda x : x/2,
+    ...     rel = lambda x, y : x < y,
     ...     bins = list(range(1, 5))
     ... )
     >>> @coverage.CoverPoint( # cover (arg) == 1...5 (5 bins)
-    ...     name = "top.parent.coverpoint2", 
+    ...     name = "top.parent.coverpoint2",
     ...     vname = "arg",
     ...     bins = list(range(1, 5))
     ... )
@@ -461,7 +699,7 @@ class CoverPoint(CoverItem):
     ...     ...
 
     >>> @coverage.CoverPoint( # cover (arg1, arg2) == (1, 1) or (0, 0) (2 bins)
-    ...     name = "top.parent.coverpoint3", 
+    ...     name = "top.parent.coverpoint3",
     ...     bins = [(1, 1), (0, 0)]
     ... )
     >>> def decorated_func1(self, arg1, arg2):
@@ -612,39 +850,39 @@ class CoverPoint(CoverItem):
 class CoverCross(CoverItem):
     """Class used to create coverage crosses as decorators.
 
-    This decorator samples members of the decorated function (its signature). 
-    It matches tuples cross-bins which are Cartesian products of bins defined 
+    This decorator samples members of the decorated function (its signature).
+    It matches tuples cross-bins which are Cartesian products of bins defined
     in :class:`CoverPoints <CoverPoint>` (items).
 
     Args:
-        name (str): a ``CoverCross`` path and name, defining its position in a 
+        name (str): a ``CoverCross`` path and name, defining its position in a
             coverage trie.
-        items (list): a list of :class:`CoverPoints <CoverPoint>` by names, 
+        items (list): a list of :class:`CoverPoints <CoverPoint>` by names,
             to create a Cartesian product of cross-bins.
         ign_bins (list, optional): a list of bins to be ignored.
         weight (int, optional): a ``CoverCross`` weight (by default ``1``).
-        at_least (int, optional): the number of hits per bin to be considered 
+        at_least (int, optional): the number of hits per bin to be considered
             as covered (by default ``1``).
 
     Example:
 
     >>> @coverage.CoverPoint(
-    ...     name = "top.parent.coverpoint1", 
-    ...     xf = lambda x, y: x, 
+    ...     name = "top.parent.coverpoint1",
+    ...     xf = lambda x, y: x,
     ...     bins = range(1, 5) # 5 bins in total
     ... )
     >>> @coverage.CoverPoint(
     ...     name = "top.parent.coverpoint2",
-    ...     xf = lambda x, y: y, 
+    ...     xf = lambda x, y: y,
     ...     bins = range(1, 5) # 5 bins in total
     ... )
     >>> @coverage.CoverCross(
-    ...     name = "top.parent.covercross", 
+    ...     name = "top.parent.covercross",
     ...     items = ["top.parent.coverpoint1", "top.parent.coverpoint2"],
     ...     ign_bins = [(1, 1), (5, 5)], # 5x5 - 2 = 23 bins in total
     ... )
     >>> def decorated_func(self, arg_a, arg_b):
-    >>> # bin from the bins list [(1, 2), (1, 3)...(5, 4)] will be matched 
+    >>> # bin from the bins list [(1, 2), (1, 3)...(5, 4)] will be matched
     >>> # when a tuple (x=arg_a, y=arg_b) was sampled at this function call.
     ...     ...
     """
@@ -735,30 +973,30 @@ class CoverCross(CoverItem):
 
 
 class CoverCheck(CoverItem):
-    """Class used to create coverage checks as decorators. 
+    """Class used to create coverage checks as decorators.
 
     It is a simplified :class:`CoverPoint` with defined 2 bins:
-    *PASS* and *FAIL* and ``f_pass()`` and ``f_fail()`` functions. 
+    *PASS* and *FAIL* and ``f_pass()`` and ``f_fail()`` functions.
 
     Args:
-        name (str): a ``CoverCheck`` path and name, defining its position in a 
+        name (str): a ``CoverCheck`` path and name, defining its position in a
             coverage trie.
         f_fail: a failure condition function - if it returns ``True``, them
             coverage level is set to ``0`` permanently.
-        f_pass: a pass condition function - if it returns ``True``, the 
-            coverage level is set to ``weight`` after ``at_least`` hits. 
+        f_pass: a pass condition function - if it returns ``True``, the
+            coverage level is set to ``weight`` after ``at_least`` hits.
         weight (int, optional): a ``CoverCheck`` weight (by default ``1``).
-        at_least (int, optional): the number of hits of the ``f_pass`` function 
-            to consider a particular ``CoverCheck`` as covered. 
+        at_least (int, optional): the number of hits of the ``f_pass`` function
+            to consider a particular ``CoverCheck`` as covered.
 
     Example:
 
     >>> @coverage.CoverCheck(
-    ...     name = "top.parent.check", 
-    ...     f_fail = lambda x : x == 0, 
+    ...     name = "top.parent.check",
+    ...     f_fail = lambda x : x == 0,
     ...     f_pass = lambda x : x < 5)
     >>> def decorated_fun(self, arg):
-    >>> # CoverCheck is 100% covered when (arg < 5) and never (arg == 0) was 
+    >>> # CoverCheck is 100% covered when (arg < 5) and never (arg == 0) was
     >>> # sampled. CoverCheck is set to 0 unconditionally when at least once
     >>> # (arg == 0) was sampled.
     ...     ...
@@ -917,7 +1155,7 @@ def _indent(elem, level=0):
             elem.tail = i
     else:
         if level and (not elem.tail or not elem.tail.strip()):
-            elem.tail = i   
+            elem.tail = i
 
 def merge_coverage(logger, merged_file_name, *files):
     """ Function used for merging coverage metrics in XML and YAML format.
@@ -963,7 +1201,7 @@ def merge_coverage(logger, merged_file_name, *files):
                 try:
                     yaml_parsed = yaml.safe_load(stream)
                 except yaml.YAMLError as exc:
-                    logger(exc)   
+                    logger(exc)
             return yaml_parsed
         dbs = [load_yaml(f, logger) for f in files]
         logger(f'YAML fileformat detected')
@@ -979,7 +1217,7 @@ def merge_coverage(logger, merged_file_name, *files):
         logger(f'Merged {l} {"file" if l==1 else "files"}')
         if filetype == 'xml':
             _indent(merged_db)
-            et.ElementTree(merged_db).write(merged_file_name)    
+            et.ElementTree(merged_db).write(merged_file_name)
         else:
             with open(merged_file_name, 'w') as outfile:
                 yaml.dump(merged_db, outfile, default_flow_style=False)
@@ -995,12 +1233,12 @@ def merge_coverage(logger, merged_file_name, *files):
             new_elements.sort(key=lambda _: _.attrib['abs_name'].count('.'))
             # Bins that will be updated
             items_to_update = [elem for elem in db.iter() if 'bin' in elem.tag
-                               and elem not in new_elements] 
+                               and elem not in new_elements]
         else:
             pre_merge_db_keys = list(merged_db.keys())
             new_elements = [elem_key for elem_key in db if elem_key not in merged_db]
             # Elements with bins that will be updated
-            items_to_update = [elem_key for elem_key in db 
+            items_to_update = [elem_key for elem_key in db
                              if 'bins:_hits' in list(db[elem_key].keys())
                              and elem_key not in new_elements]
 
@@ -1059,7 +1297,7 @@ def merge_coverage(logger, merged_file_name, *files):
                 name_to_elem[abs_name] = et.SubElement(
                     name_to_elem[parent_name], elem.tag, attrib=elem.attrib)
                 if parent_name in pre_merge_db_dict:
-                    update_parent(name=abs_name, bin_update=False, 
+                    update_parent(name=abs_name, bin_update=False,
                                   new_element_update=True)
             else:
                 parent_name = get_parent_name(elem)
@@ -1099,7 +1337,7 @@ def merge_coverage(logger, merged_file_name, *files):
                     merged_db[elem]['coverage'] = merged_db[elem]['coverage']+coverage_upd
                     merged_db[elem]['cover_percentage'] = round(
                         merged_db[elem]['coverage']*100/merged_db[elem]['size'], 2)
-                    update_parent(elem, coverage_upd) # update cover recursively 
+                    update_parent(elem, coverage_upd) # update cover recursively
 
     merge()
 
