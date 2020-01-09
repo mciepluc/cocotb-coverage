@@ -309,3 +309,24 @@ def test_issue28():
         foo.randomize_with(lambda dac_max : dac_max == 8, lambda dac_min : dac_min == 2)
         assert foo.dac_max == 8
         assert foo.dac_min == 2
+
+def test_issue27():
+    print("Test issue27")
+
+    exception_fired = [False]
+
+    class Foo(crv.Randomized):
+        def __init__(self):
+            crv.Randomized.__init__(self)
+            self.x = 0
+            self.y = 0
+
+            self.add_rand("x")
+            try:
+               self.add_rand("y ")
+            except:
+               exception_fired[0] = True
+
+    foo = Foo()
+    assert exception_fired[0]
+

@@ -156,6 +156,11 @@ class Randomized(object):
                 ), \
             "All random variables must be defined before adding a constraint."
 
+        try:
+            getattr(self, var)
+        except:
+            raise Exception("Class member '" + var + "' does not exist.")
+
         if not domain:
             domain = range(65535)  # 16 bit unsigned int
 
