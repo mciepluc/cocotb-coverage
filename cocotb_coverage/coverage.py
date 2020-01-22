@@ -1081,10 +1081,10 @@ def merge_coverage(logger, merged_file_name, *files):
                     parent_name = get_parent_name(abs_name)
                     parent_hits_threshold = int(
                         name_to_elem[parent_name].attrib['at_least'])
-                if (hits_orig < parent_hits_threshold
-                    and hits_orig+hits >= parent_hits_threshold):
-                    update_parent(name=abs_name, bin_update=True,
-                                  new_element_update=False)
+                    if (hits_orig < parent_hits_threshold
+                        and hits_orig+hits >= parent_hits_threshold):
+                        update_parent(name=abs_name, bin_update=True,
+                                      new_element_update=False)
             else:
                 new_hits_cnt = 0
                 weight = merged_db[elem]['weight']
