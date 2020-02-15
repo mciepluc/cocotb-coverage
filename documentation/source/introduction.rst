@@ -137,11 +137,11 @@ and finds out whether the variable is within a given range.
               rel = lambda val, b: b(0) <= val <= b(1)
           )
           @CoverPoint("transfer.type",
-              xf = lambda xfer.type, 
+              xf = lambda xfer.type,
               bins = [A, B]
           )
-          @CoverCross("transfer.tr_cross", 
-              items = ["transfer.direction", 
+          @CoverCross("transfer.tr_cross",
+              items = ["transfer.direction",
                        "transfer.length",
                        "transfer.type"],
               ign_bins = [(None, None, A)]
@@ -195,7 +195,13 @@ Callbacks may be used in order to adjust a test scenario when specific coverage 
 Instead of monitoring the coverage during the test execution,
 a callback function will be called automatically.
 A callback function may be simply appended to any `CoverItem` primitive by the testbench designer.
-More information about functional coverage background and this implementation can be found in [15]. FIXME
+
+.. note::
+   More information about functional coverage background and this implementation can be found in
+
+   M. Cieplucha and W. Pleskacz,
+   "New architecture of the object-oriented functional coverage mechanism for digital verification,"
+   in *2016 1st IEEE International Verification and Security Workshop (IVSW)*, July 2016, pp. 1–6.
 
 Constrained Random Verification Features in SystemVerilog
 =========================================================
@@ -230,7 +236,8 @@ Constrained Random Verification Features in cocotb-coverage
 
 The main assumption for the constrained randomization features was to provide only a flexible API,
 and let the testbench designer to adjust it depending on project needs.
-There is a default open-source based hard constraint solver included in the described framework code [16], FIXME
+There is a default open-source based hard constraint solver
+(`python-constraint <https://github.com/python-constraint/python-constraint>`_)
 but it can be replaced by the end user if required.
 The general idea of cocotb-coverage is that all classes that intended
 to use randomized variables should extend the base class `Randomized`.
@@ -309,7 +316,7 @@ constraints.
                   )
                   self.add_constraint(lambda pld: pld % 2 == 0)
 
-A more complex example is presented below. The class *TripleInt* contains three unsigned integer members,
+A more complex example is presented below. The class ``TripleInt`` contains three unsigned integer members,
 *y* and *z* are randomized.
 The first defined constraint combines all variables (random and non-random).
 The second constraint defines a triangular distribution for variable *z*.
@@ -359,7 +366,6 @@ The main test function *mean_mdv_test()* checks the data using a scoreboard and 
 The loop checks the coverage level and sends the randomized transaction to the DUT satisfying a given constraint.
 To speed up the verification closure the constraint prevents the random data
 (that has already been covered) from being generated again.
-This corresponds to the coverage-directed test generation approach discussed in Sec. II.  FIXME
 
 .. code-block:: python
 
@@ -369,7 +375,7 @@ This corresponds to the coverage-directed test generation approach discussed in 
         ...
         list_data = range(0, 2**data_width)  # a list of all possible data (0, 1...2^data_width-1)
         # generate the Cartesian product of tuples of all possible input combinations
-        # e.g. (0, 0), (0, 1)...(2^data_width-1, 2^data_width-1) for bus_width = 2, 
+        # e.g. (0, 0), (0, 1)...(2^data_width-1, 2^data_width-1) for bus_width = 2,
         #      (0, 0, 0)...(2^data_width-1, 2^data_width-1, 2^data_width-1) for bus_width = 3 etc.
         combinations = list(itertools.product(list_data, repeat=bus_width))
         self.add_rand("data", combinations)
@@ -379,17 +385,17 @@ This corresponds to the coverage-directed test generation approach discussed in 
         @cocotb.coroutine
         def send(self, transaction):
             ...
-            @cocotb.coverage.CoverPoint("top.data1", xf=lambda transaction: transaction.data[0], 
+            @cocotb.coverage.CoverPoint("top.data1", xf=lambda transaction: transaction.data[0],
                 bins=range(0, 2**transaction.data_width))
-            @cocotb.coverage.CoverPoint("top.dataN", 
-                xf=lambda transaction: transaction.data[transaction.bus_width-1], 
+            @cocotb.coverage.CoverPoint("top.dataN",
+                xf=lambda transaction: transaction.data[transaction.bus_width-1],
                 bins=range(0, 2**transaction.data_width))
-            def sample_coverage(transaction): 
+            def sample_coverage(transaction):
                 pass
             sample_coverage(transaction)
-        
+
     @cocotb.test()
-    def mean_mdv_test(dut): 
+    def mean_mdv_test(dut):
         dut_out = StreamBusMonitor(dut, "o", dut.clk)  # DUT outputs Monitor
         dut_in = StreamBusDriver(dut, "i", dut.clk)  # DUT inputs Driver
         exp_out = []
@@ -397,12 +403,12 @@ This corresponds to the coverage-directed test generation approach discussed in 
         scoreboard.add_interface(dut_out, exp_out)
         ...
         # a constraint function: do not pick values that have been already covered
-        def data_constraint(data): 
+        def data_constraint(data):
             return (not data[0] in coverage1_hits) & (not data[bus_width-1] in coverageN_hits)
-    
+
         coverage=0
         xaction=StreamTransaction(bus_width, data_width)  # create transaction instance
-        while coverage<100: 
+        while coverage<100:
             # observe newly hit bins after each transaction
             coverage1_new_bins = coverage.coverage_db["top.data1"].new_hits
             coverageN_new_bins = coverage.coverage_db["top.dataN"].new_hits
