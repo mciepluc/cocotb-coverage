@@ -330,3 +330,39 @@ def test_issue27():
     foo = Foo()
     assert exception_fired[0]
 
+def test_issue34():
+    print("Test issue34")
+    #testcase provided by sjalloq, thanks!
+
+    class RandTrxn(crv.Randomized):
+        """
+        """
+        def __init__(self):
+            crv.Randomized.__init__(self)
+            self.rnw  = 0
+            self.addr = 0
+
+            self.add_rand("rnw", range(2))
+            self.add_rand("addr", range(32))
+
+            # Constrain the channel distribution
+            self.add_constraint(lambda rnw: 0.5 if rnw else 0.5)
+            self.add_constraint(lambda addr,rnw: addr < 31 if rnw else addr < 16)
+
+            #this line is required to make sure rnw is randomized first
+            self.solve_order("rnw", "addr")
+           
+        def __repr__(self):
+            return "rnw=%s addr=%s"%(
+              self.rnw, self.addr)      
+          
+
+    reads = 0
+    spi = RandTrxn()
+    for _ in range(10000):
+        spi.randomize()
+        if spi.rnw:
+            reads +=1
+
+    assert 4900 < reads < 5100 #expect 50/50 distribution
+
