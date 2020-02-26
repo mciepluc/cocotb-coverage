@@ -14,8 +14,6 @@ If there is a match, then the number of hits of the particular bin is incremente
 A single *covergroup* may have several instances and each instance may collect coverage independently.
 A *covergroup* requires sampling, which may be defined as a logic event (e.g. a positive clock edge).
 Sampling may also be called implicitly in the testbench procedural code by invoking a *sample()* method of the *covergroup* instance.
-SVA (SystemVerilog Assertions) syntax may be used to build advanced sequences containing repetitions,
-multi-stage successions or wildcard transitions.
 A bin may be also defined as an *ignore_bins*, which means its match does not increase a coverage count,
 or an *illegal_bins*, which results in error when hit during the test execution.
 
@@ -195,6 +193,10 @@ Callbacks may be used in order to adjust a test scenario when specific coverage 
 Instead of monitoring the coverage during the test execution,
 a callback function will be called automatically.
 A callback function may be simply appended to any `CoverItem` primitive by the testbench designer.
+There are two types of callbacks:
+
+- threshold callback - called when `CoverItem<CoverItem>` exceeded given percentage threshold (see `add_threshold_callback`);
+- bins callback - called when a specific bin in `CoverItem<CoverItem>` is hit (see `add_bins_callback`);
 
 .. note::
    More information about functional coverage background and this implementation can be found in
@@ -206,7 +208,7 @@ A callback function may be simply appended to any `CoverItem` primitive by the t
 Constrained Random Verification Features in SystemVerilog
 =========================================================
 
-SystemVerilog users may define random variables using the *rand[c]* modifier.
+SystemVerilog users may define random variables using the *rand/randc* modifier.
 Calling *randomize()* function on a class instance (object) results in
 picking random values of the defined random variables, satisfying given constraints.
 Also a *with* modifier can be used together with *randomize()* which allow for
@@ -236,9 +238,9 @@ Constrained Random Verification Features in cocotb-coverage
 
 The main assumption for the constrained randomization features was to provide only a flexible API,
 and let the testbench designer to adjust it depending on project needs.
-There is a default open-source based hard constraint solver
-(`python-constraint <https://github.com/python-constraint/python-constraint>`_)
-but it can be replaced by the end user if required.
+There is an open-source based hard constraint solver used by this framework:
+`python-constraint <https://github.com/python-constraint/python-constraint>`_.
+
 The general idea of cocotb-coverage is that all classes that intended
 to use randomized variables should extend the base class `Randomized`.
 Afterwards, random variables and their ranges should be defined.
@@ -250,7 +252,7 @@ It is possible to define two types of constraints:
 - functions that return a numeric value, corresponding to a variables distribution
   (or cross-distribution) which also may be used as soft constraints.
 
-The full `Randomized` class API consists of the following functions:
+The `Randomized` class API consists of the following functions:
 
 - `add_rand(var, domain)<add_rand>` - specifies var as a randomized variable taking values from the domain list;
 - `add_constraint(cstr)<add_constraint>` - adds a constraint function to the solver;
@@ -262,8 +264,6 @@ The full `Randomized` class API consists of the following functions:
 - `randomize()` - main function that picks random values of the variables satisfying added constraints;
 - `randomize_with(cstr0, cstr1 ...)<randomize_with>` - similar to `randomize()`, but satisfies additional given constraints.
 
-..
-  TODO: add an equivalence table
 
 The example below presents the corresponding implementation of the randomized class with use of hard
 constraints.
@@ -349,102 +349,3 @@ So, for the example presented above, it is possible to define no more than six c
 separately for variables *y* and *z* and both *(y and z)*.
 It means that constraints may be overwritten, for example by `randomize_with()` function arguments.
 
-Methodology Example - Basic Test
-================================
-
-This section presents a basic test demonstrating how the provided mechanisms can be used.
-The DUT is a simple module calculating the mean value of *bus_width* inputs, each of size *data_width* bits.
-The verification goal of the test is to achieve 100% functional coverage.
-The coverage monitors data values on the first and last input buses
-and we expect to cover the whole data range of both of them.
-
-The ``StreamTransaction`` class defines a random variable *data*,
-which is a list of tuples of all possible data combinations.
-In the ``StreamBusDriver`` we define a functional coverage inside driver's *send* function.
-Data on the first (``0``) and last (``bus_width-1``) input bus is monitored using two `CoverPoints<CoverPoint>`.
-The main test function *mean_mdv_test()* checks the data using a scoreboard and performs the main while loop.
-The loop checks the coverage level and sends the randomized transaction to the DUT satisfying a given constraint.
-To speed up the verification closure the constraint prevents the random data
-(that has already been covered) from being generated again.
-
-.. code-block:: python
-
-    class StreamTransaction(crv.Randomized):
-        ...
-        def __init__(self, bus_width, datawidth):
-        ...
-        list_data = range(0, 2**data_width)  # a list of all possible data (0, 1...2^data_width-1)
-        # generate the Cartesian product of tuples of all possible input combinations
-        # e.g. (0, 0), (0, 1)...(2^data_width-1, 2^data_width-1) for bus_width = 2,
-        #      (0, 0, 0)...(2^data_width-1, 2^data_width-1, 2^data_width-1) for bus_width = 3 etc.
-        combinations = list(itertools.product(list_data, repeat=bus_width))
-        self.add_rand("data", combinations)
-
-    class StreamBusDriver(BusDriver):
-        ...
-        @cocotb.coroutine
-        def send(self, transaction):
-            ...
-            @cocotb.coverage.CoverPoint("top.data1", xf=lambda transaction: transaction.data[0],
-                bins=range(0, 2**transaction.data_width))
-            @cocotb.coverage.CoverPoint("top.dataN",
-                xf=lambda transaction: transaction.data[transaction.bus_width-1],
-                bins=range(0, 2**transaction.data_width))
-            def sample_coverage(transaction):
-                pass
-            sample_coverage(transaction)
-
-    @cocotb.test()
-    def mean_mdv_test(dut):
-        dut_out = StreamBusMonitor(dut, "o", dut.clk)  # DUT outputs Monitor
-        dut_in = StreamBusDriver(dut, "i", dut.clk)  # DUT inputs Driver
-        exp_out = []
-        scoreboard = Scoreboard(dut)  # Scoreboard compares DUT output with exp_out list content
-        scoreboard.add_interface(dut_out, exp_out)
-        ...
-        # a constraint function: do not pick values that have been already covered
-        def data_constraint(data):
-            return (not data[0] in coverage1_hits) & (not data[bus_width-1] in coverageN_hits)
-
-        coverage=0
-        xaction=StreamTransaction(bus_width, data_width)  # create transaction instance
-        while coverage<100:
-            # observe newly hit bins after each transaction
-            coverage1_new_bins = coverage.coverage_db["top.data1"].new_hits
-            coverageN_new_bins = coverage.coverage_db["top.dataN"].new_hits
-            coverage1_hits.extend(coverage1_new_bins)
-            coverageN_hits.extend(coverageN_new_bins)
-            xaction.randomize_with(data_constraint)  # randomize transaction
-            yield dut_in.send(xaction)  # execute transaction on Driver
-            exp_out.append(xaction.mean_value())  # calc mean value and send result to theS coreboard
-            # calculate the current coverage level
-            coverage = coverage.coverage_db["top"].coverage*100/coverage.coverage_db["top"].size
-
-
-For ``data_width = 6`` the simulation time was about 5 times shorter than without this constraint.
-For ``data_width = 8`` the difference is about 10 times.
-This basic demonstration shows the flexibility and ease of use of the presented MDV and CRV features.
-The implementation of a similar test scenario in SystemVerilog would be much more complicated.
-
-
-Conclusion
-==========
-
-The presented approach for MDV and CRV techniques using Python shows many benefits
-over similar verification strategy using HVLs.
-First of all, the simulator is performing only RTL simulations, it is not required to support HVLs.
-It means that, for example, open source simulators can be used with cocotb for complex verification tasks.
-The presented functional coverage features allow for a higher level of
-abstraction objects to be monitored and tracked.
-The coverage structure also better matches a real verification plan.
-That shortens the gap between a verification plan structure and functional coverage implementation.
-The described CRV features demonstrate higher flexibility than fixed HVLs syntax.
-Finally, due to Python's syntax clarity, composing programs that use
-the presented mechanisms together is straightforward.
-
-The only issue not discussed in this paper is performance.
-Python, as an interpreted language has no excellent performance results.
-This is however a relatively minor issue, as most of the complexity
-of the functional verification task is the DUT RTL simulation.
-Nevertheless, a VPI implementation differs between simulators and they may
-demonstrate different performance capabilities.

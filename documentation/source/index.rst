@@ -2,11 +2,13 @@ cocotb-coverage
 ===============
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: Contents:
 
    introduction
    reference
+   tutorials
+   examples
 
 
 

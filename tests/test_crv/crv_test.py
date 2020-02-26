@@ -365,4 +365,29 @@ def test_issue34():
             reads +=1
 
     assert 4900 < reads < 5100 #expect 50/50 distribution
+         
+def test_cdtg():
+
+    covered = []
+
+    class CdtgRandomized(crv.Randomized):
+
+        def __init__(self):
+            crv.Randomized.__init__(self)
+            self.x = 0
+            self.add_rand("x", list(range(10)))
+            self.add_constraint(lambda x : x not in covered)
+
+    @coverage.CoverPoint("top.cdtg_coverage", xf = lambda obj : obj.x, bins = list(range(10))) 
+    def sample_coverage(obj):
+        covered.append(obj.x)
+
+    obj = CdtgRandomized()
+    for _ in range(10):
+        obj.randomize()
+        sample_coverage(obj)
+
+    assert coverage.coverage_db["top.cdtg_coverage"].coverage == 10 #expect all covered in 10 steps
+        
+        
 
