@@ -114,24 +114,24 @@ It is recommended to have a single top node of the coverage database (structure 
 Cover Point
 ~~~~~~~~~~~
 
-Let's take a simple example from `ASIC WORLD Functional Coverage Tutorial <http://www.asic-world.com/systemverilog/coverage1.html>`_.
+Let's take a simple example from `ASIC WORLD Functional Coverage Tutorial - part 1 <http://www.asic-world.com/systemverilog/coverage1.html>`_.
 
 .. code-block:: systemverilog
 
     covergroup memory;
-        address : coverpoint addr {
-            bins low    = {0,50};
-            bins med    = {51,150};
-            bins high   = {151,255};
-        }
-        parity : coverpoint  par {
-            bins even  = {0};
-            bins odd   = {1};
-        }
-        read_write : coverpoint rw {
-            bins  read  = {0};
-            bins  write = {1};
-        }
+      address : coverpoint addr {
+        bins low    = {0,50};
+        bins med    = {51,150};
+        bins high   = {151,255};
+      }
+      parity : coverpoint  par {
+        bins even  = {0};
+        bins odd   = {1};
+      }
+      read_write : coverpoint rw {
+        bins  read  = {0};
+        bins  write = {1};
+      }
     endgroup
 
 To create equivalent `Cover Points <CoverPoint>`, the following must be assured:
@@ -213,15 +213,105 @@ Different type of transitions (consecutive, range etc.) can be easily implemente
 Plese note, that in cocotb-coverage all bins must be explicitly defined in the "bins" list. 
 There is no option to use a wildacrd or ignore bins. 
 However, manipulating data sets in Python is easy, so creating a complex list is not an issue. 
-Please note that "bins" must always be a list type.
+Please note that "bins" must always be a list type (cannot be range or stream - must be converted).  
+Few examples:
+
+.. code-block:: python
+  
+    #integers 1 ... 5
+    bins1 = [1, 2, 3, 4, 5] 
+    #tuples (1, 1) ... (2, 2)
+    bins2 = [(1, 1), (1, 2), (2, 1), (2, 2)] 
+    #integers 0 ... 99
+    bins3 = list(range(100)) 
+    #tuples (0, 0) ... (9, 9)
+    bins4 = [(x, y) for x in range (10) for y in range (10)]
+    #strings
+    bins5 = ["a", "b", "c"]
+    #integers 0 ... 99 except divisible by 5
+    bins6 = list(filter(lambda x : (x % 5) != 0, range(100)))
  
 
 Cover Cross
 ~~~~~~~~~~~
 
+Let's take another example from `ASIC WORLD Functional Coverage Tutorial - part 20 <http://www.asic-world.com/systemverilog/coverage20.html>`_.
 
+.. code-block:: systemverilog
 
-TODO
+   covergroup address_cov ();
+      ADDRESS : coverpoint addr {
+        bins addr0 = {0};
+        bins addr1 = {1};
+      }
+      CMD : coverpoint cmd {
+        bins READ = {0};
+        bins WRITE = {1};
+        bins IDLE  = {2};
+      }
+      CRS_USER_ADDR_CMD : cross ADDRESS, CMD {
+        bins USER_ADDR0_READ = binsof(CMD) intersect {0};
+      }
+      CRS_AUTO_ADDR_CMD : cross ADDRESS, CMD {
+        ignore_bins AUTO_ADDR_READ = binsof(CMD) intersect {0};
+        ignore_bins AUTO_ADDR_WRITE = binsof(CMD) intersect {1} && binsof(ADDRESS) intersect{0};
+      }
+
+Creating a `CoverCross` in cocotb-coverage works the same way. 
+List of `CoverPoints <CoverPoint>` must be provided and cross-bins are created automaticly.
+Automatically created bins are tuples with number of elements equal to number of `CoverPoints <CoverPoint>`.
+Bacially, list of cross-bins is a cartesian product of `CoverPoints <CoverPoint>` bins.
+
+The list of cross-bins will have the following strucutre:
+
+.. code-block:: python
+
+    [
+       (cp0_bin0, cp1_bin0, ...), (cp0_bin1, cp1_bin0, ...), ..., 
+       (cp0_bin0, cp1_bin1, ...), (cp0_bin1, cp1_bin1, ...), ...,
+       ...
+    ]
+
+It is possible to create a list of *ignore_bins*. 
+This list should contain explicit tuples of cross-bins that should be ignored.
+Additionally, if an ignore corss-bin contains a *None* value, all cross-bins with values equal to not-*None* elements of this ignore bin will be ignored.
+
+Below is the code corresponding to the above SystemVerilog example:
+
+.. code-block:: python
+  
+    CoverPoint(
+      "address_cov.ADDRESS", 
+      vname="addr", 
+      bins = [0, 1], 
+      bins_labels = ["addr0", "addr1"]
+    )
+    CoverPoint(
+      "address_cov.CMD", 
+      vname="cmd", 
+      bins = [0, 1, 2], 
+      bins_labels = ["READ", "WRITE", "IDLE"]
+    )
+    CoverCross(
+      "memory.CRS_USER_ADDR_CMD", 
+      items = ["address_cov.ADDRESS", "address_cov.CMD"],
+      #default created cross-bins will be:
+      #("addr0", "READ"), ("addr0", "WRITE"), ("addr0", "IDLE"),
+      #("addr1", "READ"), ("addr1", "WRITE"), ("addr1", "IDLE")
+      ign_bins = [("addr0", "WRITE"), ("addr0", "IDLE"), ("addr1", "WRITE"), ("addr1", "IDLE")]
+      #OR alternatively with None value
+      #ign_bins = [(None, "WRITE"), (None, "IDLE")]      
+    )
+    CoverCross(
+      "memory.CRS_AUTO_ADDR_CMD", 
+      items = ["address_cov.ADDRESS", "address_cov.CMD"],
+      #default created cross-bins will be:
+      #("addr0", "READ"), ("addr0", "WRITE"), ("addr0", "IDLE"),
+      #("addr1", "READ"), ("addr1", "WRITE"), ("addr1", "IDLE")
+      ign_bins = [("addr0", "READ"), ("addr1", "READ"), ("addr0", "WRITE")]
+      #OR alternatively with None value
+      #ign_bins = [(None, "READ"), ("addr0", "WRITE")]      
+    )
 
 Using CoverCheck as Assertions
 ------------------------------
