@@ -2,6 +2,17 @@
 Tutorials
 #########
 
+Let's Start
+===========
+
+These tutorials present typical use cases of the functional coverage and constrained random verification features.
+There are prepared in particular for SystemVerilog users that would like to use cocotb-coverage.
+It is required that user at this level:
+
+- has basic knowledge of Python (including collections and *lambda* expressions that are going to be used quite frequently),
+- understands main cocotb concepts (coroutines, forks, yielding events),
+- has basic knowledge of SystemVerilog (or any other HVL) coverage and randomization constructs.
+
 Functional Coverage
 ===================
 
@@ -33,7 +44,7 @@ Alternatively, SV *covergroup* may be implicitly sampled using the built-in *sam
     cg1_inst.sample(); //implicit sampling of the cg1 instance cg1_inst
 
 In cocotb-coverage, sampling is done each time when a function containing a coverage is called. 
-In order to provide exactly the same functionality, a cocotb couroutine must be created that monitors the sampling signal.
+In order to provide exactly the same functionality, a cocotb coroutine must be created that monitors the sampling signal.
 Please note, that this approach may not be effective, as it makes more sense to sample a "test" event rather than "logical" event. 
 
 In cocotb-coverage, the sampling function signature must contains the objects that are being covered.
@@ -61,7 +72,7 @@ In cocotb-coverage, the sampling function signature must contains the objects th
 Coverage Section
 ~~~~~~~~~~~~~~~~
 
-`Coverage Section <coverage_section>` is a concept instroduced in cocotb-coverage, that allows for separating the coverage code from the testbench code.
+`Coverage Section <coverage_section>` is a concept introduced in cocotb-coverage, that allows for separating the coverage code from the testbench code.
 It allows for packing the coverage primitives in separated blocks of code. 
 Below code examples are equivalent.
 
@@ -136,9 +147,9 @@ Let's take a simple example from `ASIC WORLD Functional Coverage Tutorial - part
 
 To create equivalent `Cover Points <CoverPoint>`, the following must be assured:
 
-- sampling funcion signature must containt variables "addr", "par" and "rw",
+- sampling function signature must contain variables "addr", "par" and "rw",
 - each `CoverPoint` must associate the "vname" field with one of that variable,
-- for `CoverPoint` "memory.address", there must be an auxiliary function used that deinfes range bins matching used as a relation function,
+- for `CoverPoint` "memory.address", there must be an auxiliary function used that defines range bins matching used as a relation function,
 - the "bins_labels" field should be used in order to bind the bins with a meaningful label. 
 
 .. code-block:: python
@@ -210,8 +221,8 @@ We need to use an auxiliary relation function and data set to store these previo
 
 Different type of transitions (consecutive, range etc.) can be easily implemented using the approach similar to the above. 
 
-Plese note, that in cocotb-coverage all bins must be explicitly defined in the "bins" list. 
-There is no option to use a wildacrd or ignore bins. 
+Please note, that in cocotb-coverage all bins must be explicitly defined in the "bins" list. 
+There is no option to use a wildcard or ignore bins. 
 However, manipulating data sets in Python is easy, so creating a complex list is not an issue. 
 Please note that "bins" must always be a list type (cannot be range or stream - must be converted).  
 Few examples:
@@ -258,11 +269,11 @@ Let's take another example from `ASIC WORLD Functional Coverage Tutorial - part 
       }
 
 Creating a `CoverCross` in cocotb-coverage works the same way. 
-List of `CoverPoints <CoverPoint>` must be provided and cross-bins are created automaticly.
+List of `CoverPoints <CoverPoint>` must be provided and cross-bins are created automatically.
 Automatically created bins are tuples with number of elements equal to number of `CoverPoints <CoverPoint>`.
-Bacially, list of cross-bins is a cartesian product of `CoverPoints <CoverPoint>` bins.
+Basically, list of cross-bins is a Cartesian product of `CoverPoints <CoverPoint>` bins.
 
-The list of cross-bins will have the following strucutre:
+The list of cross-bins will have the following structure:
 
 .. code-block:: python
 
@@ -274,7 +285,7 @@ The list of cross-bins will have the following strucutre:
 
 It is possible to create a list of *ignore_bins*. 
 This list should contain explicit tuples of cross-bins that should be ignored.
-Additionally, if an ignore corss-bin contains a *None* value, all cross-bins with values equal to not-*None* elements of this ignore bin will be ignored.
+Additionally, if an ignore cross-bin contains a *None* value, all cross-bins with values equal to not-*None* elements of this ignore bin will be ignored.
 
 Below is the code corresponding to the above SystemVerilog example:
 
@@ -293,7 +304,7 @@ Below is the code corresponding to the above SystemVerilog example:
       bins_labels = ["READ", "WRITE", "IDLE"]
     )
     CoverCross(
-      "memory.CRS_USER_ADDR_CMD", 
+      "address_cov.CRS_USER_ADDR_CMD", 
       items = ["address_cov.ADDRESS", "address_cov.CMD"],
       #default created cross-bins will be:
       #("addr0", "READ"), ("addr0", "WRITE"), ("addr0", "IDLE"),
@@ -303,7 +314,7 @@ Below is the code corresponding to the above SystemVerilog example:
       #ign_bins = [(None, "WRITE"), (None, "IDLE")]      
     )
     CoverCross(
-      "memory.CRS_AUTO_ADDR_CMD", 
+      "address_cov.CRS_AUTO_ADDR_CMD", 
       items = ["address_cov.ADDRESS", "address_cov.CMD"],
       #default created cross-bins will be:
       #("addr0", "READ"), ("addr0", "WRITE"), ("addr0", "IDLE"),
@@ -313,11 +324,102 @@ Below is the code corresponding to the above SystemVerilog example:
       #ign_bins = [(None, "READ"), ("addr0", "WRITE")]      
     )
 
+Accessing Coverage Objects
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Each coverage primitive is a full-featured object of type `CoverItem`. 
+Each of these objects can be accessed from a singleton coverage database object: `CoverageDB` organized in a dictionary data structure.
+The key for each element is its full name. 
+Accessing the coverage primitives allows for obtaining its properties and defining callbacks (note some of them apply only for specific types).
+Few examples below:
+
+.. code-block:: python
+  
+    cg_memory = coverage_db["memory"] # make a handle to the "memory" covergroup
+    print(cg_memory.cover_percentage) # print the coverage level of the whole covergroup
+
+    #create a callback for the covergroup - print info when 50% level exceeded
+    cg_memory.add_threshold_callback(lambda : print("exceeded 50% coverage"), 50)
+
+    cp_memory_addr = coverage_db["memory.address"] # make a handle to the "memory.address" coverpoint
+    print(cp_memory_addr.detailed_coverage) # print the detailed coverage  
+
+    #create a bins callback for the coverpoint - print info when "low" address bin hit
+    cg_memory.add_bins_callback(lambda : print("low address bin hit"), "low")
+
+
 Using CoverCheck as Assertions
 ------------------------------
 
-TODO
+A `CoverCheck` is a coverage type that can be used as an assertion. 
+It is required to define two function for this type: a pass condition function and a fail condition function.
 
+Basically, pass condition function must be satisfied in order to cover this coverage primitive (set coverage to 100%).
+Fail condition function must NOT be satisfied in any case. 
+If fail condition function is satisfied, coverage level is set to '0' permanently.
+Additionally, a callback can be connected to the `CoverCheck`, to define immediate test action to be taken (such as test termination). 
+
+It is very easy to use CoverCheck as a replacement for immediate assertion (assertions that can be evaluated instantly). 
+An example can be:
+
+.. code-block:: systemverilog
+
+   assert a != b else $error("assertion error");
+
+In the Python code, it is required to define a bins callback for bin "FAIL" if an error action is to be taken.
+
+.. code-block:: python
+  
+    CoverCheck(
+      "assertion.immediate.example", 
+      f_fail = lambda a, b : a == b, #if a==b, check failed
+      f_pass = lambda a, b : a == 1  #if a==1, coverage condition satisfied
+    )
+
+    coverage_db["assertion.immediate.example"].add_bins_callback(
+      lambda : raise TestFailure("assertion error"),
+      "FAIL"
+    )
+    
+Writing concurrent assertions (conditions that involve logical sequences) is a bit more difficult.
+First of all, the `CoverCheck` condition is evaluated only once, at the sampling event. 
+To make it useful, it is required to use the same trick as for sequences coverage, i.e. store the previous values of used variables.
+Not all concurrent assertions can be translated this way, but for some of them it is possible. 
+Of course, sampling event can be delayed as well, which makes things a bit easier.
+
+Let's implement an example of sequence that checks if after 'x' is set, 'y' must be set within 5 cycles.
+
+.. code-block:: systemverilog
+
+   assert x |-> ##[1:5] y else $error("assertion error");
+
+To do that, we need to create a coroutine that monitors 'x' assertion and stores 'y' values for next 5 cycles.
+After that time, the `CoverCheck` can be evaluated.
+
+.. code-block:: python
+
+    @CoverCheck(
+      "assertion.concurrent.example", 
+      f_fail = lambda y_prev : not 1 in y_prev,
+      f_pass = lambda : True  # always return true
+    )
+    def sample(y_prev):
+        pass
+
+    def wait_x():
+        while True:
+            yield RisingEdge(dut.clk)
+            if (dut.x): # wait for x set
+                for ii in range(5): # store value of y for next 5 cycles
+                    yield RisingEdge(dut.clk)
+                    y_prev[ii] = dut.y.value
+                sample(y_prev)
+        
+        
+    coverage_db["assertion.concurrent.example"].add_bins_callback(
+      lambda : raise TestFailure("assertion error"),
+      "FAIL"
+    )
 
 Advanced Coverage
 -----------------
@@ -354,7 +456,7 @@ Coverage-Driven Test Generation
 
 The following example shows how to implement a coverage-driven test generation idea.
 The goal is to use coverage metrics in a run time in order to dynamically adjust randomization. 
-As an outcome, the simulation time can be greatily recuced, because already covered data is excluded from the randomization set.
+As an outcome, the simulation time can be greatly reduced, because already covered data is excluded from the randomization set.
 
 An example code is presented below. 
 It is required to create a set (e.g. list) containing already covered data (*covered*). 

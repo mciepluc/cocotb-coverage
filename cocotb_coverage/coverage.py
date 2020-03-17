@@ -631,12 +631,12 @@ class CoverCross(CoverItem):
     >>> @coverage.CoverPoint(
     ...     name = "top.parent.coverpoint1", 
     ...     xf = lambda x, y: x, 
-    ...     bins = range(1, 5) # 5 bins in total
+    ...     bins = list(range(1, 5)) # 5 bins in total
     ... )
     >>> @coverage.CoverPoint(
     ...     name = "top.parent.coverpoint2",
     ...     xf = lambda x, y: y, 
-    ...     bins = range(1, 5) # 5 bins in total
+    ...     bins = list(range(1, 5)) # 5 bins in total
     ... )
     >>> @coverage.CoverCross(
     ...     name = "top.parent.covercross", 
@@ -743,7 +743,7 @@ class CoverCheck(CoverItem):
     Args:
         name (str): a ``CoverCheck`` path and name, defining its position in a 
             coverage trie.
-        f_fail: a failure condition function - if it returns ``True``, them
+        f_fail: a failure condition function - if it returns ``True``, the
             coverage level is set to ``0`` permanently.
         f_pass: a pass condition function - if it returns ``True``, the 
             coverage level is set to ``weight`` after ``at_least`` hits. 
