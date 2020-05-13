@@ -53,7 +53,10 @@ for _ in range (10):
     p.randomize()  # randomize object
     plot_point(p)  # call a function which will sample the coverage
 
-#export coverage to XML
-coverage_db.export_to_xml(xml_name="coverage.xml")
+# export coverage to XML
+coverage_db.export_to_xml(filename="coverage.xml")
+# export coverage to YAML
+coverage_db.export_to_yaml(filename="coverage.yml")
+
               
 ```

@@ -161,3 +161,7 @@ def fifo_test(dut):
     
     #print coverage report
     coverage_db.report_coverage(log.info, bins=True)
+    #export
+    coverage_db.export_to_xml(filename="coverage_fifo.xml")
+    coverage_db.export_to_yaml(filename="coverage_fifo.yml")
+

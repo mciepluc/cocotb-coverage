@@ -274,3 +274,7 @@ def pkt_switch_test(dut):
 
     #print coverage report
     coverage_db.report_coverage(log.info, bins=False)
+    #export
+    coverage_db.export_to_xml(filename="coverage_pkt_switch.xml")
+    coverage_db.export_to_yaml(filename="coverage_pkt_switch.yml")
+
