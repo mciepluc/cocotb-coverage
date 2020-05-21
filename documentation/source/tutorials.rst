@@ -8,7 +8,6 @@ Let's Start
 These tutorials present typical use cases of the functional coverage and constrained random verification features.
 There are prepared in particular for SystemVerilog users that would like to use cocotb-coverage.
 It is required that user at this level:
-
 - has basic knowledge of Python (including collections and *lambda* expressions that are going to be used quite frequently),
 - understands main cocotb concepts (coroutines, forks, yielding events),
 - has basic knowledge of SystemVerilog (or any other HVL) coverage and randomization constructs.
@@ -32,16 +31,16 @@ Alternatively, SV *covergroup* may be implicitly sampled using the built-in *sam
 
 .. code-block:: systemverilog
 
-    //covergroup definition
-    covergroup cg1 @ (posedge en); //sampling at rising edge of en
+    // covergroup definition
+    covergroup cg1 @ (posedge en); // sampling at rising edge of en
         ...
     endgroup
     
-    //covergroup instance
+    // covergroup instance
     cg1 cg1_inst;
 
     ...
-    cg1_inst.sample(); //implicit sampling of the cg1 instance cg1_inst
+    cg1_inst.sample(); // implicit sampling of the cg1 instance cg1_inst
 
 In cocotb-coverage, sampling is done each time when a function containing a coverage is called. 
 In order to provide exactly the same functionality, a cocotb coroutine must be created that monitors the sampling signal.
@@ -53,20 +52,20 @@ In cocotb-coverage, the sampling function signature must contains the objects th
 
     @CG1
     def sampling_function(...):
-        #call this function to sample the CG1 coverage
+        # call this function to sample the CG1 coverage
 
     ...
-    sampling_function(...) #implicit sampling can be anywhere in the code
+    sampling_function(...) # implicit sampling can be anywhere in the code
 
     ...
     @cocotb.coroutine
     def edge_sensitive_sampling():
-        #process to observe the logical event that samples the coverage
+        # process to observe the logical event that samples the coverage
         while True:
             yield RisingEdge(en)
-            sampling_function(...) #implicit sampling
+            sampling_function(...) # implicit sampling
 
-    cocotb.fork(edge_sensitive_sampling) #fork the process observing the sampling event
+    cocotb.fork(edge_sensitive_sampling) # fork the process observing the sampling event
 
 
 Coverage Section
@@ -154,7 +153,7 @@ To create equivalent `Cover Points <CoverPoint>`, the following must be assured:
 
 .. code-block:: python
 
-    #auxiliary relation function to define bins matching within a range
+    # auxiliary relation function to define bins matching within a range
     range_relation = lambda val_, bin_ : bin_[0] <= val_ <= bin_[1]
 
     CoverPoint(
@@ -175,7 +174,7 @@ To create equivalent `Cover Points <CoverPoint>`, the following must be assured:
       bins = [0, 1], bins_labels = ["read", "write"]
     )
 
-    #function sampling coverage must use all covered variables
+    # function sampling coverage must use all covered variables
     ...
     def sample_coverage(addr, par, rw):
         ...
@@ -203,10 +202,10 @@ We need to use an auxiliary relation function and data set to store these previo
 
 .. code-block:: python
   
-    #auxiliary data set containing previously sampled values
+    # auxiliary data set containing previously sampled values
     addr_prev = collections.deque(4*[0], 4) # we would need up to 4 values in this example
 
-    #auxiliary relation function to define bins matching
+    # auxiliary relation function to define bins matching
     def transition_relation(val_, bin_):
        addr_prev.appendleft(val_) #we update the data set here (side effect)
        return list(addr_prev)[:len(bin_)] == bin_ #check equivalence of the meaningful elements
@@ -229,17 +228,17 @@ Few examples:
 
 .. code-block:: python
   
-    #integers 1 ... 5
+    # integers 1 ... 5
     bins1 = [1, 2, 3, 4, 5] 
-    #tuples (1, 1) ... (2, 2)
+    # tuples (1, 1) ... (2, 2)
     bins2 = [(1, 1), (1, 2), (2, 1), (2, 2)] 
-    #integers 0 ... 99
+    # integers 0 ... 99
     bins3 = list(range(100)) 
-    #tuples (0, 0) ... (9, 9)
+    # tuples (0, 0) ... (9, 9)
     bins4 = [(x, y) for x in range (10) for y in range (10)]
-    #strings
+    # strings
     bins5 = ["a", "b", "c"]
-    #integers 0 ... 99 except divisible by 5
+    # integers 0 ... 99 except divisible by 5
     bins6 = list(filter(lambda x : (x % 5) != 0, range(100)))
  
 
@@ -306,22 +305,22 @@ Below is the code corresponding to the above SystemVerilog example:
     CoverCross(
       "address_cov.CRS_USER_ADDR_CMD", 
       items = ["address_cov.ADDRESS", "address_cov.CMD"],
-      #default created cross-bins will be:
-      #("addr0", "READ"), ("addr0", "WRITE"), ("addr0", "IDLE"),
-      #("addr1", "READ"), ("addr1", "WRITE"), ("addr1", "IDLE")
+      # default created cross-bins will be:
+      # ("addr0", "READ"), ("addr0", "WRITE"), ("addr0", "IDLE"),
+      # ("addr1", "READ"), ("addr1", "WRITE"), ("addr1", "IDLE")
       ign_bins = [("addr0", "WRITE"), ("addr0", "IDLE"), ("addr1", "WRITE"), ("addr1", "IDLE")]
-      #OR alternatively with None value
-      #ign_bins = [(None, "WRITE"), (None, "IDLE")]      
+      # OR alternatively with None value
+      # ign_bins = [(None, "WRITE"), (None, "IDLE")]      
     )
     CoverCross(
       "address_cov.CRS_AUTO_ADDR_CMD", 
       items = ["address_cov.ADDRESS", "address_cov.CMD"],
-      #default created cross-bins will be:
-      #("addr0", "READ"), ("addr0", "WRITE"), ("addr0", "IDLE"),
-      #("addr1", "READ"), ("addr1", "WRITE"), ("addr1", "IDLE")
+      # default created cross-bins will be:
+      # ("addr0", "READ"), ("addr0", "WRITE"), ("addr0", "IDLE"),
+      # ("addr1", "READ"), ("addr1", "WRITE"), ("addr1", "IDLE")
       ign_bins = [("addr0", "READ"), ("addr1", "READ"), ("addr0", "WRITE")]
-      #OR alternatively with None value
-      #ign_bins = [(None, "READ"), ("addr0", "WRITE")]      
+      # OR alternatively with None value
+      # ign_bins = [(None, "READ"), ("addr0", "WRITE")]      
     )
 
 Accessing Coverage Objects
@@ -338,13 +337,13 @@ Few examples below:
     cg_memory = coverage_db["memory"] # make a handle to the "memory" covergroup
     print(cg_memory.cover_percentage) # print the coverage level of the whole covergroup
 
-    #create a callback for the covergroup - print info when 50% level exceeded
+    # create a callback for the covergroup - print info when 50% level exceeded
     cg_memory.add_threshold_callback(lambda : print("exceeded 50% coverage"), 50)
 
     cp_memory_addr = coverage_db["memory.address"] # make a handle to the "memory.address" coverpoint
     print(cp_memory_addr.detailed_coverage) # print the detailed coverage  
 
-    #create a bins callback for the coverpoint - print info when "low" address bin hit
+    # create a bins callback for the coverpoint - print info when "low" address bin hit
     cg_memory.add_bins_callback(lambda : print("low address bin hit"), "low")
 
 
@@ -372,8 +371,8 @@ In the Python code, it is required to define a bins callback for bin "FAIL" if a
   
     CoverCheck(
       "assertion.immediate.example", 
-      f_fail = lambda a, b : a == b, #if a==b, check failed
-      f_pass = lambda a, b : a == 1  #if a==1, coverage condition satisfied
+      f_fail = lambda a, b : a == b, # if a==b, check failed
+      f_pass = lambda a, b : a == 1  # if a==1, coverage condition satisfied
     )
 
     coverage_db["assertion.immediate.example"].add_bins_callback(
@@ -424,7 +423,129 @@ After that time, the `CoverCheck` can be evaluated.
 Advanced Coverage
 -----------------
 
-TODO
+In this section, a few more advanced coverage constructs are presented.
+Some of them work similar way in SystemVerilog.
+
+Weight and Coverage Level (Percentage)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+All coverage primitives are associated with the following metrics:
+
+- size (number of bins contained),
+- coverage (number of bins covered),
+- coverage level (coverage divided by size, in percent).
+
+When the `CoverItem` contains multiple children, its metrics are a sum of the metrics of all of them. 
+Consequently, the top `CoverItem` will contain all defined primitives, and its metrics will represent the top-level coverage.
+To make some nodes more important than the others, weights can be used. 
+
+Weight is an integer that increases the size of the `CoverItem`. 
+For example, by default a `CoverPoint` containing 3 bins will have size of 3.
+When assigning a weight of 2, its size will be equal to 6.
+Of course, it will also increase sizes of all containers containing this `CoverPoint` and consequently will increase its impact on coverage level.
+
+Please note that coverage primitives are not balanced. 
+It means that for overall coverage percentage, the biggest contributor will be the element containing the highest number of bins. 
+
+Below example shows two `CoverPoints <CoverPoint>` balanced to contribute exactly 50% each.
+
+.. code-block:: python
+  
+    CoverPoint(
+      "address.lsb", 
+      vname="lsb", 
+      bins = list(range(10)), 
+    )
+    CoverPoint(
+      "address.msb", 
+      vname="msb", 
+      bins = list(range(5)), 
+      weight = 2 # dobule the weight to match sizes of both coverpoints
+    )
+    
+    ...
+    
+    n = coverage_db["address.lsb"].size              # n = 10    
+    n = coverage_db["address.msb"].size              # n = 10
+    n = coverage_db["address"].size                  # n = 20
+    
+    # assume we covered all bins from LSB, and only one bin from MSB
+    
+    n = coverage_db["address.lsb"].coverage          # n = 10 
+    n = coverage_db["address.msb"].coverage          # n = 2
+    n = coverage_db["address"].coverage              # n = 12
+    p = coverage_db["address.lsb"].cover_percentage  # p = 100 
+    p = coverage_db["address.msb"].cover_percentage  # p = 20
+    p = coverage_db["address"].cover_percentage      # p = 60   
+    
+
+Attribute "At Least"
+~~~~~~~~~~~~~~~~~~~~
+    
+The "at least" attribute is used to define how many times a particular bin must be hit to be considered covered.
+Note that a `CoverCross` will work independently from its `CoverPoints <CoverPoint>`.
+E.g. if "at least" attribute (>1) is defined for `CoverPoints <CoverPoint>` only, `CoverCross` coverage may be increasing while `CoverPoints <CoverPoint>` coverage is still 0.
+
+A simple example below shows usage of "at least" attribute.
+
+.. code-block:: python
+  
+    CoverPoint(
+      "address.lsb", 
+      vname="lsb", 
+      bins = list(range(10)), 
+      at_least = 2
+    )
+    CoverPoint(
+      "address.msb", 
+      vname="msb", 
+      bins = list(range(5)), 
+      weight = 2 # dobule the weight to match sizes of both coverpoints
+      at_least = 5
+    )
+    CoverCross(
+      "address.cross", 
+      items = ["address.lsb", "address.msb"]    
+    )    
+    
+    ...
+    
+    # assume we sampled only once
+    
+    n = coverage_db["address.lsb"].coverage          # n = 0 
+    n = coverage_db["address.msb"].coverage          # n = 0
+    n = coverage_db["address.cross"].coverage        # n = 1    
+    
+Attribute "Injection"
+~~~~~~~~~~~~~~~~~~~~~
+
+The "injection" attribute is used to describe if more that one bin can be hit at once. 
+By default it is set "true", meaning only one bin (first one that matches) can be hit at single sampling event.
+Setting this attribute to "false" allows for matching multiple bins. 
+
+Below example shows the difference in behavior between similar `CoverPoints <CoverPoint>`.
+
+
+    def is_divider(number, divider):
+        return number % divider == 0
+  
+    @coverage.CoverPoint("top.t3.inj", rel = is_divider, , inj = False)
+    def sample(x):
+        pass
+
+    CoverPoint(
+      "cp.injective", 
+      bins = [1, 2, 3] 
+    )
+    CoverPoint(
+      "cp.non-injective", 
+      bins = [1, 2, 3],
+      inj=False
+    )
+
+    # assume we sampled "9" once
+    n = coverage_db["cp.injective"].coverage          # n = 1, only "1" sampled 
+    n = coverage_db["cp.non-injective"].coverage      # n = 2, "1" and "3" sampled 
 
 
 Constrained Random Verification
@@ -476,17 +597,14 @@ In the given example, 10 randomizations are required to fully cover the *CdtgRan
             crv.Randomized.__init__(self)
             self.x = 0
             self.add_rand("x", list(range(10)))
-            self.add_constraint(lambda x : x not in covered) #do not pick items from the list
+            self.add_constraint(lambda x : x not in covered) # do not pick items from the list
 
     @coverage.CoverPoint("top.cdtg_coverage", xf = lambda obj : obj.x, bins = list(range(10))) 
     def sample_coverage(obj):
-        covered.append(obj.x) #extend the list with sampled value
+        covered.append(obj.x) # extend the list with sampled value
 
     obj = CdtgRandomized()
     for _ in range(10):
         obj.randomize()
         sample_coverage(obj)
-
-
-
 

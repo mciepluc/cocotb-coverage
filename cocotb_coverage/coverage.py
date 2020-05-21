@@ -446,16 +446,16 @@ class CoverPoint(CoverItem):
 
     Example:
 
-    >>> @coverage.CoverPoint( # cover (arg/2) < 1...5 (5 bins)
+    >>> @coverage.CoverPoint( # cover (arg/2) < 1 ... 4 (4 bins)
     ...     name = "top.parent.coverpoint1", 
     ...     xf = lambda x : x/2, 
     ...     rel = lambda x, y : x < y, 
-    ...     bins = list(range(1, 5))
+    ...     bins = list(range(5))
     ... )
-    >>> @coverage.CoverPoint( # cover (arg) == 1...5 (5 bins)
+    >>> @coverage.CoverPoint( # cover (arg) == 1 ... 4 (4 bins)
     ...     name = "top.parent.coverpoint2", 
     ...     vname = "arg",
-    ...     bins = list(range(1, 5))
+    ...     bins = list(range(5))
     ... )
     >>> def decorated_func1(self, arg):
     ...     ...
@@ -477,7 +477,7 @@ class CoverPoint(CoverItem):
             return super(CoverPoint, cls).__new__(CoverPoint)
 
     def __init__(self, name, vname=None, xf=None, rel=None, bins=[],
-                 bins_labels=None, weight=1, at_least=1, inj=False):
+                 bins_labels=None, weight=1, at_least=1, inj=True):
         if not name in coverage_db:
             CoverItem.__init__(self, name)
             if self._parent is None:
@@ -579,7 +579,7 @@ class CoverPoint(CoverItem):
                     if bin in self._bins_callbacks:
                         self._bins_callbacks[bin]()
                     # if injective function, continue through all bins
-                    if not self._injection:
+                    if self._injection:
                         break
 
             # notify parent about new coverage level
@@ -631,20 +631,20 @@ class CoverCross(CoverItem):
     >>> @coverage.CoverPoint(
     ...     name = "top.parent.coverpoint1", 
     ...     xf = lambda x, y: x, 
-    ...     bins = list(range(1, 5)) # 5 bins in total
+    ...     bins = list(range(5)) # 4 bins in total
     ... )
     >>> @coverage.CoverPoint(
     ...     name = "top.parent.coverpoint2",
     ...     xf = lambda x, y: y, 
-    ...     bins = list(range(1, 5)) # 5 bins in total
+    ...     bins = list(range(5)) # 4 bins in total
     ... )
     >>> @coverage.CoverCross(
     ...     name = "top.parent.covercross", 
     ...     items = ["top.parent.coverpoint1", "top.parent.coverpoint2"],
-    ...     ign_bins = [(1, 1), (5, 5)], # 5x5 - 2 = 23 bins in total
+    ...     ign_bins = [(1, 1), (4, 4)], # 4x4 - 2 = 14 bins in total
     ... )
     >>> def decorated_func(self, arg_a, arg_b):
-    >>> # bin from the bins list [(1, 2), (1, 3)...(5, 4)] will be matched 
+    >>> # bin from the bins list [(1, 2), (1, 3)...(4, 3)] will be matched 
     >>> # when a tuple (x=arg_a, y=arg_b) was sampled at this function call.
     ...     ...
     """

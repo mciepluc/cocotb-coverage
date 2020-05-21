@@ -103,7 +103,7 @@ def test_injective_coverpoint():
     def is_divider(number, divider):
         return number % divider == 0
   
-    @coverage.CoverPoint("top.t3.inj", rel = is_divider, bins = [1, 2, 3, 5, 7, 11, 13, 17], inj = True)
+    @coverage.CoverPoint("top.t3.inj", rel = is_divider, bins = [1, 2, 3, 5, 7, 11, 13, 17], inj = False)
     def sample(x):
         pass
 
@@ -271,7 +271,7 @@ def test_xml_export():
                 assert elem_parent in child_parent_dict[elem]
 
     # Check YML
-    yml_db = yaml.full_load(open(yml_filename, 'r'))
+    yml_db = yaml.safe_load(open(yml_filename, 'r'))
     for item in yml_db:
         if isinstance(coverage.coverage_db[item], coverage.CoverPoint):
             #assert if correct coverage levels

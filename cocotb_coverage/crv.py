@@ -229,6 +229,8 @@ class Randomized(object):
         randomization is called in separated steps, where at each next step
         some constraints are already resolved. Number of arguments defines 
         number of the randomization steps.
+        If this funcion is specified multiple times for a given object, only
+        the last one remains valid. 
 
         Args:
             *orderedVars (multiple str or list): Variables that are requested 
@@ -623,7 +625,7 @@ class Randomized(object):
 
         # step 4: calculate simple distributions for remaining random variables
         for dvar in randVariables:
-            if not dvar in solution:  # must be already unresolved variable
+            if not dvar in solution:  # must be yet unresolved variable
                 domain = randVariables[dvar]
                 weights = []
                 if dvar in self._simpleDistributions:
@@ -652,6 +654,8 @@ class Randomized(object):
                 else:
                     # random variable has no defined distribution function -
                     # call simple random.choice
+                    if (len(domain) == 0):
+                        raise Exception("Could not resolve constraints!")
                     solution[dvar] = random.choice(domain)
         return solution
 

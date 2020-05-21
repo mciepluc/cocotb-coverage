@@ -56,7 +56,5 @@ for _ in range (10):
 # export coverage to XML
 coverage_db.export_to_xml(filename="coverage.xml")
 # export coverage to YAML
-coverage_db.export_to_yaml(filename="coverage.yml")
-
-              
+coverage_db.export_to_yaml(filename="coverage.yml")              
 ```

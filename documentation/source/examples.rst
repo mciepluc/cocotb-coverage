@@ -256,7 +256,7 @@ The following features are covered:
     @CoverPoint(
       "top.packet_length", 
       xf = lambda pkt, event, addr, mask, ll, ul: pkt.len,    #packet length
-      bins = list(range(3,32))                                #may be 3 ... 32 bytes
+      bins = list(range(3,32))                                #may be 3 ... 31 bytes
     )
     @CoverPoint("top.event", vname="event", bins = ["DIS", "TB", "AF", "LF"])
     @CoverPoint(

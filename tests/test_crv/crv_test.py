@@ -389,5 +389,30 @@ def test_cdtg():
 
     assert coverage.coverage_db["top.cdtg_coverage"].coverage == 10 #expect all covered in 10 steps
         
-        
+def test_issue40():
+
+    class my_random(crv.Randomized):  
+
+        def __init__(self):
+            super().__init__()    
+            self.x = 0
+            self.y = 0
+            self.z = 0  
+            
+            self.add_rand('x', list(range(10)))
+            self.add_rand('y', list(range(10)))
+            self.add_rand('z', list(range(10)))
+            
+            self.add_constraint(lambda x: 0 <= x <= 5)
+            self.add_constraint(lambda y: 0 <= y <= 6)
+            self.add_constraint(lambda x,y,z: x+y+z < 15)    
+            
+            self.solve_order(['x', 'y'], 'z')
+
+    my_obj = my_random()
+    my_obj.add_constraint(lambda x,y,z: x+y+z < 10)
+    my_obj.randomize()
+    assert 0 <= my_obj.x <= 5
+    assert 0 <= my_obj.y <= 6
+    assert my_obj.x + my_obj.y + my_obj.z < 10
 
