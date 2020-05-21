@@ -525,6 +525,7 @@ Setting this attribute to "false" allows for matching multiple bins.
 
 Below example shows the difference in behavior between similar `CoverPoints <CoverPoint>`.
 
+.. code-block:: python
 
     def is_divider(number, divider):
         return number % divider == 0
