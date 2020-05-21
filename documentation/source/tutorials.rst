@@ -454,7 +454,7 @@ Below example shows two `CoverPoints <CoverPoint>` balanced to contribute exactl
     CoverPoint(
       "address.lsb", 
       vname="lsb", 
-      bins = list(range(10)), 
+      bins = list(range(10))
     )
     CoverPoint(
       "address.msb", 
@@ -500,7 +500,7 @@ A simple example below shows usage of "at least" attribute.
       "address.msb", 
       vname="msb", 
       bins = list(range(5)), 
-      weight = 2 # dobule the weight to match sizes of both coverpoints
+      weight = 2, # dobule the weight to match sizes of both coverpoints
       at_least = 5
     )
     CoverCross(
@@ -530,23 +530,21 @@ Below example shows the difference in behavior between similar `CoverPoints <Cov
     def is_divider(number, divider):
         return number % divider == 0
   
-    @coverage.CoverPoint("top.t3.inj", rel = is_divider, , inj = False)
-    def sample(x):
-        pass
-
     CoverPoint(
       "cp.injective", 
+      rel = is_divider,
       bins = [1, 2, 3] 
     )
     CoverPoint(
-      "cp.non-injective", 
+      "cp.non-injective",
+      rel = is_divider,
       bins = [1, 2, 3],
       inj=False
     )
 
     # assume we sampled "9" once
-    n = coverage_db["cp.injective"].coverage          # n = 1, only "1" sampled 
-    n = coverage_db["cp.non-injective"].coverage      # n = 2, "1" and "3" sampled 
+    n = coverage_db["cp.injective"].coverage          # n = 1, only "1" sampled
+    n = coverage_db["cp.non-injective"].coverage      # n = 2, "1" and "3" sampled
 
 
 Constrained Random Verification
