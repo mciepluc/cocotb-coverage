@@ -9,9 +9,16 @@ This package allows you to use constrained randomization and functional coverage
 
 The implemented functionality is intended to be easily understandable by SystemVerilog users and provides significant extensions compared to Hardware Verification Languages. 
 
-There is an option to export coverage database to a readable XML format and a function which allows for merging such files is provided. 
+There is an option to export coverage database to a readable XML or YML format and a function which allows for merging such files is provided. 
 
-References:
+### Installation
+The package can be installed with pip. Version ```1.1.dev0``` is recommended (official release comming soon...).
+```
+pip install cocotb-coverage==1.1.dev0
+```
+
+### References
+
 * cocotb core package - [cocotb](https://github.com/potentialventures/cocotb)
 * Constraint Solving Problem resolver used in this project - [python-constraint](https://github.com/python-constraint/python-constraint)
 * [documentation](https://cocotb-coverage.readthedocs.io/en/latest/) 
@@ -20,7 +27,7 @@ References:
 * DVCon 2017 Presentation - [SLIDES](http://events.dvcon.org/2017/proceedings/slides/02_3.pdf)
 * example advanced verification project - [apbi2c_cocotb_example](https://github.com/mciepluc/apbi2c_cocotb_example)
 
-Simple example below:
+### Code Example:
 ```Python
 # point represented by x and y coordinates in range (-10,10)
 class Point(crv.Randomized):
