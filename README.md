@@ -12,7 +12,7 @@ The implemented functionality is intended to be easily understandable by SystemV
 There is an option to export coverage database to a readable XML or YML format and a function which allows for merging such files is provided. 
 
 ### Installation
-The package can be installed with pip. Version ```1.1.dev0``` is recommended (official release comming soon...).
+The package can be installed with pip. Version ```1.1.dev0``` is recommended (official release coming soon...).
 ```
 pip install cocotb-coverage==1.1.dev0
 ```
@@ -22,12 +22,19 @@ pip install cocotb-coverage==1.1.dev0
 * cocotb core package - [cocotb](https://github.com/potentialventures/cocotb)
 * Constraint Solving Problem resolver used in this project - [python-constraint](https://github.com/python-constraint/python-constraint)
 * [documentation](https://cocotb-coverage.readthedocs.io/en/latest/) 
-* [PyPI package](https://pypi.org/project/cocotb-coverage/)
+* [PyPI package](https://pypi.org/project/cocotb-coverage/1.1.dev0)
 * DVCon 2017 Paper - [New Constrained Random and MDV Methodology using Python](http://events.dvcon.org/2017/proceedings/papers/02_3.pdf)
 * DVCon 2017 Presentation - [SLIDES](http://events.dvcon.org/2017/proceedings/slides/02_3.pdf)
 * example advanced verification project - [apbi2c_cocotb_example](https://github.com/mciepluc/apbi2c_cocotb_example)
 
-### Code Example:
+### Roadmap
+* Release of ```1.1.0``` planned in Q3 2020
+* Planned documentation updates: adding examples and tutorials ([documentation](https://cocotb-coverage.readthedocs.io/en/latest/)  is being updated continuously)
+* Planned basic support for UCIS coverage database format
+* Bug fixes and code quality improvements
+* Any suggestions welcome - you are encouraged to open an issue!
+
+### Code Example
 ```Python
 # point represented by x and y coordinates in range (-10,10)
 class Point(crv.Randomized):
