@@ -8,6 +8,7 @@ Let's Start
 These tutorials present typical use cases of the functional coverage and constrained random verification features.
 There are prepared in particular for SystemVerilog users that would like to use cocotb-coverage.
 It is required that user at this level:
+
 - has basic knowledge of Python (including collections and *lambda* expressions that are going to be used quite frequently),
 - understands main cocotb concepts (coroutines, forks, yielding events),
 - has basic knowledge of SystemVerilog (or any other HVL) coverage and randomization constructs.
@@ -460,7 +461,7 @@ Below example shows two `CoverPoints <CoverPoint>` balanced to contribute exactl
       "address.msb", 
       vname="msb", 
       bins = list(range(5)), 
-      weight = 2 # dobule the weight to match sizes of both coverpoints
+      weight = 2 # double the weight to match sizes of both coverpoints
     )
     
     ...
@@ -500,7 +501,6 @@ A simple example below shows usage of "at least" attribute.
       "address.msb", 
       vname="msb", 
       bins = list(range(5)), 
-      weight = 2, # dobule the weight to match sizes of both coverpoints
       at_least = 5
     )
     CoverCross(
@@ -539,7 +539,7 @@ Below example shows the difference in behavior between similar `CoverPoints <Cov
       "cp.non-injective",
       rel = is_divider,
       bins = [1, 2, 3],
-      inj=False
+      inj = False
     )
 
     # assume we sampled "9" once
