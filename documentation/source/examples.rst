@@ -189,7 +189,7 @@ The packed is transmitted continuously, so data valid strobe must not be deasser
 The transition 1 -> 0 on the data valid strobe denotes the end of the packet. 
 
 The address-based filtering is active when packet address bits marked by the mask (reg address 011) are equal to the filtering address bits (reg address 010). 
-The length-based filtering is active when packet length is greater than lower size limit (reg address 100) and lower than upper size limit (reg address 101).
+The length-based filtering is active when packet length is greater than or equal to lower size limit (reg address 100) and lower than or equal to upper size limit (reg address 101).
  
 Testbench
 ---------
@@ -213,7 +213,7 @@ The Payload (*payload*) content is randomized using the `post_randomize` method.
             self.add_rand("len", list(range(3,32)))
 
         def post_randomize(self):
-            self.payload = [random.randint(0,255) for _ in range(self.len-2)]
+            self.payload = [np.random.randint(256) for _ in range(self.len-2)]
 
 
 There are driver (*PacketIFDriver*) and monitor (*PacketIFMonitor*) implemented for the packet interface.
@@ -247,7 +247,7 @@ The following features are covered:
 
 - length of the packet,
 - type of the filtration (disabled, address filtering, lenght filtering or transmit on both interfaces),
-- address filtering (bitwise AND of the address and mask),
+- address filtering (bitwise AND of the address and mask) - to reduce coverage space this check is performed only on lower 4 bits,
 - length filtering (lower an upper limit),
 - cross of the packet length with the filtering limit.
 
@@ -255,29 +255,30 @@ The following features are covered:
 
     @CoverPoint(
       "top.packet_length", 
-      xf = lambda pkt, event, addr, mask, ll, ul: pkt.len,    #packet length
-      bins = list(range(3,32))                                #may be 3 ... 31 bytes
+      xf = lambda pkt, event, addr, mask, ll, ul: pkt.len,    # packet length
+      bins = list(range(3,32))                                # may be 3 ... 31 bytes
     )
     @CoverPoint("top.event", vname="event", bins = ["DIS", "TB", "AF", "LF"])
     @CoverPoint(
       "top.filt_addr",  
-      xf = lambda pkt, event, addr, mask, ll, ul: addr & mask,  #filtering based on a particular bits in header 
-      bins = list(range(32))                                    #all options possible
+      xf = lambda pkt, event, addr, mask, ll, ul:         # filtering based on particular bits in header 
+        (addr & mask & 0x0F) if event == "AF" else None,  # check only if event is "address filtering"
+      bins = list(range(16)),                             # check only 4 LSBs if all options tested
     )
     @CoverPoint(
       "top.filt_len_eq", 
-      xf = lambda pkt, event, addr, mask, ll, ul: ll == ul,  #filtering of a single packet length 
+      xf = lambda pkt, event, addr, mask, ll, ul: ll == ul,  # filtering of a single packet length 
       bins = [True, False]
     )
     @CoverPoint(
       "top.filt_len_ll", 
-      vname = "ll",                    #lower limit of packet length
-      bins = list(range(3,31)) 
+      vname = "ll",                    # lower limit of packet length
+      bins = list(range(3,32))         # 3 ... 31
     )
     @CoverPoint(
       "top.filt_len_ul", 
-      vname = "ll",                    #upper limit of packet length
-      bins = list(range(3,32)) 
+      vname = "ul",                    # upper limit of packet length
+      bins = list(range(3,32))         # 3 ... 31
     )
     @CoverCross(
       "top.filt_len_ll_x_packet_length", 
@@ -299,47 +300,49 @@ The scoreboarding is done concurrently to the main loop operations.
 
 .. code-block:: python
 
-    for _ in range(1000): #is that enough repetitions to ensure coverage goal? Check out!
+    for _ in range(1000): # is that enough repetitions to ensure coverage goal? Check out!
 
-        event = random.choice(["DIS", "TB", "AF", "LF"])
-        #DIS - disable filtering : expect all packets on interface 0
-        #TB  - transmit bot : expect all packets on interface 0 and 1
-        #AF  - address filtering : expect filtered packets on interface 1, others on 0
-        #LF  - length filtering : expect filtered packets on interface 1, others on 0
+        event = np.random.choice(["DIS", "TB", "AF", "LF"])
+        # DIS - disable filtering : expect all packets on interface 0
+        # TB  - transmit bot : expect all packets on interface 0 and 1
+        # AF  - address filtering : expect filtered packets on interface 1, others on 0
+        # LF  - length filtering : expect filtered packets on interface 1, others on 0
 
-        #randomize test data
+        # randomize test data
         pkt = Packet();
         pkt.randomize()
-        addr = random.randint(0, 0xFF)
-        mask = random.randint(0, 0xFF)
-        low_limit = random.randint(3,31)
-        up_limit = random.randint(low_limit,32)
+        addr = np.random.randint(256)               # 0x00 .. 0xFF
+        mask = np.random.randint(256)               # 0x00 .. 0xFF
+        low_limit = np.random.randint(3,32)         # 3 ... 31
+        up_limit = np.random.randint(low_limit,32)  # low_limit ... 31
 
-        #expect the packet on the particular interface
-        if event is "DIS":
+        # expect the packet on the particular interface
+        if event == "DIS":
             yield disable_filtering()
             expected_data0.append(pkt)       
-        elif event is "TB":
+        elif event == "TB":
             yield enable_transmit_both()
             expected_data0.append(pkt)
             expected_data1.append(pkt)    
-        elif event is "AF":
+        elif event == "AF":
             yield enable_addr_filtering(addr, mask)
             if ((pkt.addr & mask) == (addr & mask)):
                 expected_data1.append(pkt)
             else:
                 expected_data0.append(pkt)
-        elif event is "LF":
+        elif event == "LF":
             yield enable_len_filtering(low_limit, up_limit)
             if (low_limit <= pkt.len <= up_limit):
                 expected_data1.append(pkt)
             else:
                 expected_data0.append(pkt)       
 
-        #wait DUT
+        # wait DUT
         yield driver.send(pkt)
+        yield RisingEdge(dut.clk)
+        yield RisingEdge(dut.clk)
 
-        #LOG the action
-        log_sequence(pkt, event, addr, mask, low_limit, up_limit)      
+        # LOG the action
+        log_sequence(pkt, event, addr, mask, low_limit, up_limit) 
 
 

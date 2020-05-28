@@ -42,6 +42,8 @@ from cocotb.monitors import BusMonitor
 from cocotb_coverage.coverage import *
 from cocotb_coverage.crv import *
 
+import numpy as np
+
 class Packet(Randomized):
     def __init__(self, data = [0, 3, 0]):
         Randomized.__init__(self)
@@ -53,7 +55,7 @@ class Packet(Randomized):
         self.add_rand("len", list(range(3,32)))
 
     def post_randomize(self):
-        self.payload = [random.randint(0,255) for _ in range(self.len-2)]
+        self.payload = [np.random.randint(256) for _ in range(self.len-2)]
 
 class PacketIFDriver(BusDriver):
     '''
@@ -70,7 +72,7 @@ class PacketIFDriver(BusDriver):
     @cocotb.coroutine
     def send(self, packet):
         self.bus.valid <= 1
-        #transmit header
+        # transmit header
         self.bus.data <= packet.addr
         yield RisingEdge(self.clock)
         self.bus.data <= packet.len
@@ -101,13 +103,13 @@ class PacketIFMonitor(BusMonitor):
             if (self.bus.valid == 1):
                 pkt_receiving = True
                 received_data.append(int(self.bus.data))
-            elif pkt_receiving and (self.bus.valid == 0): #packet ended
+            elif pkt_receiving and (self.bus.valid == 0): # packet ended
                 pkt = Packet(received_data)
                 self._recv(pkt)
                 pkt_receiving = False
                 received_data = []
 
-#simple clock generator
+# simple clock generator
 @cocotb.coroutine
 def clock_gen(signal, period=10000):
     while True:
@@ -120,10 +122,10 @@ def clock_gen(signal, period=10000):
 def pkt_switch_test(dut):
     """ PKT_SWITCH Test """
     
-    log = cocotb.logging.getLogger("cocotb.test") #logger instance
-    cocotb.fork(clock_gen(dut.clk, period=100)) #start clock running
+    log = cocotb.logging.getLogger("cocotb.test") # logger instance
+    cocotb.fork(clock_gen(dut.clk, period=100))   # start clock running
     
-    #reset & init
+    # reset & init
     dut.rst_n <= 1
     dut.datain_data <= 0
     dut.datain_valid <= 0
@@ -136,7 +138,7 @@ def pkt_switch_test(dut):
     yield Timer(1000)
     dut.rst_n <= 1
     
-    #procedure of writing configuration registers
+    # procedure of writing configuration registers
     @cocotb.coroutine
     def write_config(addr, data):
         for [a, d] in zip(addr, data):
@@ -161,8 +163,8 @@ def pkt_switch_test(dut):
     monitor0 = PacketIFMonitor(dut, name="dataout0", clock=dut.clk)
     monitor1 = PacketIFMonitor(dut, name="dataout1", clock=dut.clk)
 
-    expected_data0 = [] #queue of expeced packet at interface 0
-    expected_data1 = [] #queue of expeced packet at interface 1
+    expected_data0 = [] # queue of expeced packet at interface 0
+    expected_data1 = [] # queue of expeced packet at interface 1
 
 
     def scoreboarding(pkt, queue_expected):       
@@ -176,33 +178,34 @@ def pkt_switch_test(dut):
     monitor0.add_callback(lambda _ : log.info("Receiving packet on interface 0 (packet not filtered)"))
     monitor1.add_callback(lambda _ : log.info("Receiving packet on interface 1 (packet filtered)"))
 
-    #functional coverage - check received packet
+    # functional coverage - check received packet
 
     @CoverPoint(
       "top.packet_length", 
-      xf = lambda pkt, event, addr, mask, ll, ul: pkt.len,    #packet length
-      bins = list(range(3,32))                                #may be 3 ... 32 bytes
+      xf = lambda pkt, event, addr, mask, ll, ul: pkt.len,    # packet length
+      bins = list(range(3,32))                                # may be 3 ... 31 bytes
     )
     @CoverPoint("top.event", vname="event", bins = ["DIS", "TB", "AF", "LF"])
     @CoverPoint(
       "top.filt_addr",  
-      xf = lambda pkt, event, addr, mask, ll, ul: addr & mask,  #filtering based on a particular bits in header 
-      bins = list(range(32))                                    #all options possible
+      xf = lambda pkt, event, addr, mask, ll, ul:         # filtering based on particular bits in header 
+        (addr & mask & 0x0F) if event == "AF" else None,  # check only if event is "address filtering"
+      bins = list(range(16)),                             # check only 4 LSBs if all options tested
     )
     @CoverPoint(
       "top.filt_len_eq", 
-      xf = lambda pkt, event, addr, mask, ll, ul: ll == ul,  #filtering of a single packet length 
+      xf = lambda pkt, event, addr, mask, ll, ul: ll == ul,  # filtering of a single packet length 
       bins = [True, False]
     )
     @CoverPoint(
       "top.filt_len_ll", 
-      vname = "ll",                    #lower limit of packet length
-      bins = list(range(3,31)) 
+      vname = "ll",                    # lower limit of packet length
+      bins = list(range(3,32))         # 3 ... 31
     )
     @CoverPoint(
       "top.filt_len_ul", 
-      vname = "ll",                    #upper limit of packet length
-      bins = list(range(3,32)) 
+      vname = "ul",                    # upper limit of packet length
+      bins = list(range(3,32))         # 3 ... 31
     )
     @CoverCross(
       "top.filt_len_ll_x_packet_length", 
@@ -226,55 +229,55 @@ def pkt_switch_test(dut):
         elif event is "LF":
             log.info("Length filtering, lower limit: %d, upper limit: %d", ll, ul)
 
-    #main loop
-    for _ in range(1000): #is that enough repetitions to ensure coverage goal? Check out!
+    # main loop
+    for _ in range(1000): # is that enough repetitions to ensure coverage goal? Check out!
 
-        event = random.choice(["DIS", "TB", "AF", "LF"])
-        #DIS - disable filtering : expect all packets on interface 0
-        #TB  - transmit bot : expect all packets on interface 0 and 1
-        #AF  - address filtering : expect filtered packets on interface 1, others on 0
-        #LF  - length filtering : expect filtered packets on interface 1, others on 0
+        event = np.random.choice(["DIS", "TB", "AF", "LF"])
+        # DIS - disable filtering : expect all packets on interface 0
+        # TB  - transmit bot : expect all packets on interface 0 and 1
+        # AF  - address filtering : expect filtered packets on interface 1, others on 0
+        # LF  - length filtering : expect filtered packets on interface 1, others on 0
 
-        #randomize test data
+        # randomize test data
         pkt = Packet();
         pkt.randomize()
-        addr = random.randint(0, 0xFF)
-        mask = random.randint(0, 0xFF)
-        low_limit = random.randint(3,31)
-        up_limit = random.randint(low_limit,32)
+        addr = np.random.randint(256)               # 0x00 .. 0xFF
+        mask = np.random.randint(256)               # 0x00 .. 0xFF
+        low_limit = np.random.randint(3,32)         # 3 ... 31
+        up_limit = np.random.randint(low_limit,32)  # low_limit ... 31
 
-        #expect the packet on the particular interface
-        if event is "DIS":
+        # expect the packet on the particular interface
+        if event == "DIS":
             yield disable_filtering()
             expected_data0.append(pkt)       
-        elif event is "TB":
+        elif event == "TB":
             yield enable_transmit_both()
             expected_data0.append(pkt)
             expected_data1.append(pkt)    
-        elif event is "AF":
+        elif event == "AF":
             yield enable_addr_filtering(addr, mask)
             if ((pkt.addr & mask) == (addr & mask)):
                 expected_data1.append(pkt)
             else:
                 expected_data0.append(pkt)
-        elif event is "LF":
+        elif event == "LF":
             yield enable_len_filtering(low_limit, up_limit)
             if (low_limit <= pkt.len <= up_limit):
                 expected_data1.append(pkt)
             else:
                 expected_data0.append(pkt)       
 
-        #wait DUT
+        # wait DUT
         yield driver.send(pkt)
         yield RisingEdge(dut.clk)
         yield RisingEdge(dut.clk)
 
-        #LOG the action
+        # LOG the action
         log_sequence(pkt, event, addr, mask, low_limit, up_limit)      
 
-    #print coverage report
+    # print coverage report
     coverage_db.report_coverage(log.info, bins=False)
-    #export
+    # export
     coverage_db.export_to_xml(filename="coverage_pkt_switch.xml")
     coverage_db.export_to_yaml(filename="coverage_pkt_switch.yml")
 
