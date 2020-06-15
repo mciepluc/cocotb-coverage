@@ -250,7 +250,7 @@ Let's take another example from `ASIC WORLD Functional Coverage Tutorial - part 
 
 .. code-block:: systemverilog
 
-   covergroup address_cov ();
+    covergroup address_cov ();
       ADDRESS : coverpoint addr {
         bins addr0 = {0};
         bins addr1 = {1};
@@ -364,7 +364,7 @@ An example can be:
 
 .. code-block:: systemverilog
 
-   assert a != b else $error("assertion error");
+    assert a != b else $error("assertion error");
 
 In the Python code, it is required to define a bins callback for bin "FAIL" if an error action is to be taken.
 
@@ -391,7 +391,7 @@ Let's implement an example of sequence that checks if after 'x' is set, 'y' must
 
 .. code-block:: systemverilog
 
-   assert x |-> ##[1:5] y else $error("assertion error");
+    assert x |-> ##[1:5] y else $error("assertion error");
 
 To do that, we need to create a coroutine that monitors 'x' assertion and stores 'y' values for next 5 cycles.
 After that time, the `CoverCheck` can be evaluated.
@@ -520,7 +520,7 @@ Attribute "Injection"
 ~~~~~~~~~~~~~~~~~~~~~
 
 The "injection" attribute is used to describe if more that one bin can be hit at once. 
-By default it is set "true", meaning only one bin (first one that matches) can be hit at single sampling event.
+By default it is set "True", meaning only one bin (first one that matches) can be hit at single sampling event.
 Setting this attribute to "false" allows for matching multiple bins. 
 
 Below example shows the difference in behavior between similar `CoverPoints <CoverPoint>`.
@@ -550,26 +550,282 @@ Below example shows the difference in behavior between similar `CoverPoints <Cov
 Constrained Random Verification
 ===============================
 
-
 Translating SystemVerilog Constructs to cocotb-coverage
 -------------------------------------------------------
 
-TODO
+In SystemVerilog constrained randomization is managed by "randomizing" defined objects. 
+Such object definition contains random variables (denoted by *rand* modifiers) and constraints, which are function-like language constructs with specific internal syntax.
+Random objects are used in the testbench like any regular objects, and user can call the built-in *randomize* method in order to perform actual randomization. 
+
+The cocotb-coverage constrained randomization mechanism works very similarly. 
+The implemented randomized class should:
+
+- inherit the base class `Randomized`,
+- define random variables using `add_rand` method,
+- define constraints (optionally).
+
+Constraints are arbitrary functions of random (and possibly non-random) class members that return "True"/"False" value. 
+
+Let's take an example from `ASIC WORLD Random Constraints Tutorial - part 6 <http://http://www.asic-world.com/systemverilog/random_constraint6.html>`_.
+
+.. code-block:: systemverilog
+
+    class frame_t;
+      rand bit [7:0] src_port;
+      rand bit [7:0] des_port;
+      constraint c {
+         // inclusive
+         src_port inside { [8'h0:8'hA],8'h14,8'h18 };
+         // exclusive
+          ! (des_port inside { [8'h4:8'hFF] });
+      }
+      function void post_randomize();
+        begin
+          $display("src port : %0x",src_port);
+          $display("des port : %0x",des_port);
+        end
+      endfunction
+    endclass
+
+
+The following functionality is implemented:
+
+- there are two random variables: "src_port" and "des_port",
+- "src_port" is 8-bit and takes values from '0x00' to '0x0A', '0x14' or '0x18',
+- "des_port" is 8-bit and takes all possible values except '0x04' to '0xFF', 
+- after randomization, values are displayed.
+
+Implementing the same functionality in cocotb-coverage is pretty straightforward.
+
+.. code-block:: python
+
+    class frame_t(crv.Randomized):                      # inherit crv.Randomized
+        
+        def __init__(self):
+            crv.Randomized.__init__(self)               # initialize super-class
+            self.src_port = 0                           # define class members and their default values
+            self.des_port = 0
+            self.add_rand("src_port", list(range(256))) # full 8-bit space
+            self.add_rand("des_port", list(range(256))) # full 8-bit space
+
+            # define constraints (divide into two constraints compared to SV example)
+            def c_1(src_port):
+                return src_port in (list(range(0x0A + 1)) + [14, 20])
+                
+            def c_2(des_port):
+                return not des_port in list(range(0x04, 0xFF + 1))
+            
+            # add constraints
+            self.add_constraint(c_1)
+            self.add_constraint(c_2)
+            
+        def post_randomize(self):
+            print("src port : %0x", self.src_port)
+            print("des port : %0x", self.des_port)
+
+
+Please note, that in this particular example there is no need to define constraints, as domains can be defined straightway:
+
+.. code-block:: python
+
+      self.add_rand("src_port", list(range(0x0A + 1)) + [14, 20]) 
+      self.add_rand("des_port", list(range(0x04)))
+      
+More complex functions can be also used as constraints, similar way as more complex constructs in SystemVerilog.
+An example of conditional constraint is presented below. 
+
+.. code-block:: systemverilog
+
+    constraint cstr_frame_sizes {
+      if (size == RUNT)  {
+        length >= 0;
+        length <= 63;
+      } else if (size == OVERSIZE) {
+        length >= 1501;
+        length <= 5000;
+      }
+    }
+        
+.. code-block:: python
+
+    def cstr_frame_sizes(length, size):
+        if (size == "RUNT"):
+            return 0 <= length <= 63
+        else if (size == "OVERSIZE"):
+            return 1501 <= length <= 5000
+
+Constraints Properties
+~~~~~~~~~~~~~~~~~~~~~~
+
+As already said, in cocotb-coverage constraints are simple functions that return "True"/"False" value.
+They are hard constraints, which means that in case they cannot be resolved, an exception is risen.
+It is possible to define constraints that return numerical value.
+They are called distributions and described in a separate section.
+
+Constraints, being functions, are also regular objects, which means they can be manipulated the same way as other Python components.
+Constraints can also be defined using *lambda* expressions.
+
+Each implemented constraint must literally contain random variables (that are under constrain) in the signature.
+Additional important property is that constraints can be defined only once for a given variable or set of variables.
+If multiple constraints are defined, the later overrides the existing one. 
+The variables order in the constraint signature must be alphabetical.
+
+Let's take an example of the object which contains 3 variables: "x", "y" and "z", where "x" and "y" are randomized.
+It means, we can define the following constraints: only for "x", only for "y" and for "x" combined with "y".
+Not-randomized class members ("z") can be used in the constraints as well.
+
+.. code-block:: python
+
+    class RandExample(crv.Randomized):
+        
+        def __init__(self, z):
+            crv.Randomized.__init__(self)                   # initialize super-class
+            self.x = 0                                      # define class members and their default values
+            self.y = 0
+            self.z = z                                      # "z" is not a random variable
+            
+            self.x_c = lambda x, z: x > z                   # define a constraint that is not used by default
+            
+            self.add_rand("x", list(range(16)))             # full 4-bit space
+            self.add_rand("y", list(range(16)))             # full 4-bit space
+            
+            # add constraints
+            self.add_constraint(lambda x, z : x != z)       # constraint for standalone "x"
+            self.add_constraint(lambda y, z : y <= z)       # constraint for standalone "y"
+            self.add_constraint(lambda x, y : x + y == 8)   # constraint for combined "x" and "y"          
+            
+        # example simple randomization
+        foo = RandExample(5)
+        foo.randomize()
+
+        # example randomization with overridden constraint
+        bar = RandExample(6)
+        bar.randomize_with(bar.x_c)                         # this constraint overrides existing one "x != z"
+    
+
+Class `Randomized`
+~~~~~~~~~~~~~~~~~~
+
+Class `Randomized` is used as a base class for all components that are implementing presented constrained randomization functions.
+This class provides the following methods:
+
+- `add_rand` - adds a random variable and specifies its domain (space),
+- `add_constraint` - adds a constraint function to the solver,
+- `del_constraint` - removes a constraint function from the solver,
+- `solve_order` - optionally specifies the order of randomizing variables,
+- `pre_randomize` - function automatically called before `randomize`/`randomize_with`,
+- `post_randomize` - function automatically called after `randomize`/`randomize_with`,
+- `randomize` - main function that picks random values of the variables satisfying given constraints,
+- `randomize_with` - similar to `randomize()`, but satisfies additional given constraints.
+
+The latter four are equivalent to their SystemVerilog correspondents.
+The `solve_order` method roughly corresponds to the SystemVerilog *solve ... before* construct.
+In the `solve_order` method user may define an order of assigning random values to variables, which also determines the order of resolving constraints.
+Note, that because of this, it may happen that in some cases constraints cannot be resolved.
+
+Let's try to apply a `solve_order` for the example presented above.
+We can try to resolve "x" before "y" or the opposite.
+If we resolve "x" before "y", in the first step only constraint "x != z" is to be met. 
+So it may happen that if e.g. "x = 10" is picked, in the next step constraint "x + y == 8" cannot be satisfied under any condition.
+If we resolve "y" before "x", in the first step only constraint "y <= z" will be applied. 
+So, in case that "z > 8" next step constraints again may be not met.
+`solve_order` method is discussed more in the "performance" section.
+  
 
 Distributions
 -------------
 
 TODO
 
-Advanced Constraints
---------------------
 
-TODO
 
 Randomization Order and Performance Issues
 ------------------------------------------
 
-TODO
+From the computational complexity perspective, it is important to realize that constraint solver performance greatly depends on the search space. 
+The complexity increases with the search space size, so it is recommended to plan the constrained randomization strategy that allows for reduction of this problem. 
+Search space size is related to the domain sizes of the random variables that are constrained together. 
+
+There are few solutions that can be implemented in order to reduce the constraint solver problem complexity:
+
+- Reducing domain sizes of random variables
+- Limiting number of constraints defined
+- Splitting the randomization routine into subroutines (using `solve_order` function)
+- Using random generation features out of the cocotb-coverage (`pre_randomize` and `post_randomize` functions can be used)
+
+Recommended strategy for large-domain variables can be to use constraint solver to determine the data ranges, and then use `post_randomize` to pick the actual random data.
+An example is provided below.
+
+.. code-block:: python
+
+    # not good - large domains
+
+    self.add_rand("addr", list(range(2**16)))
+    self.add_rand("packet_size", list(range(1000)))
+  
+    # better - variables with limited ranges
+    
+    # MSBs randomized using constraint solver, LSBs assumed fully random
+    self.add_rand("addr_msb", list(range(2**8)))
+    
+    # auxiliary random variable with packet size ranges
+    self.add_rand("packet_size_range", ["min", "small", "med", "large", "max"])   
+  
+    # final randomization of the variables "addr" and "packet_size" is done below
+    def post_randomize(self):
+        
+        addr_lsb = np.random.randint(2**8)
+        self.addr = self.addr_msb << 8 + addr_lsb
+        
+        self.packet_size = \
+            1                           if self.packet_size_range == "min" else
+            np.random.randint(2,16)     if self.packet_size_range == "small" else
+            np.random.randint(16,256)   if self.packet_size_range == "med" else
+            np.random.randint(256,1000) if self.packet_size_range == "large" else
+            1000                      # if self.packet_size_range == "max"
+
+
+Note, that constraint solver engine is in operation only for hard constraints that involve multiple variables.
+Only this case can cause a computational complexity expansion.
+So the example above, assuming that variables "addr" and "packet_size" are not involved in any complex constraints, may not require simplification at all.
+
+Example of variables constrained together is shown below.
+The search space size is 128x128x128, so big enough to possibly cause a performance drop.
+But, when analyzing the constraints it becomes clear that they can be satisfied for any value of "x".
+Because of that, the problem can be split into subroutines: randomization of "x" and randomization of "y" and "z".
+That reduces the search space to 128 + 128x128.
+
+.. code-block:: python
+
+    self.add_rand("x", list(range(128)))
+    self.add_rand("y", list(range(128)))
+    self.add_rand("z", list(range(128)))
+
+    self.add_constraint(lambda x, y: x < 2*y)
+    self.add_constraint(lambda y, z: y + z == 128)
+    self.add_constraint(lambda x, z: (x+z)%2 == 0)  
+
+    # randomize "x" first, then "y" and "z"
+    self.solve_order('x', ['y', 'z'])  
+    
+Note that in this particular example, the different randomization order ("y" and "z" before "x") cannot be used, because in case that "y"=0 is picked, first constraint cannot be met.
+
+The same rules as above are valid for distributions. 
+
+The last comment is about the operations order when calling a `randomize` routine. 
+We can divide defined constraints into the following groups, which is also consistent with the problem resolving steps:
+
+a) hard constraints of single variables,
+b) hard constraints of multiple variables,
+c) distributions of multiple variables, 
+d) distributions of single variables. 
+
+Step (a) is not a computationally complex task and is always resolved prior to any complex hard constraint (that may or may not involve the same variables).
+Step (b) is a routine that requires external solver - it is time consuming and it is suggested to simplify this step using the techniques discussed above.
+Step (c) is a distribution calculation - note at this stage the search space is reduced because of hard constraints already applied (some solutions are already rejected). 
+If search space is still big at this point, it may be also required to simplify it. 
+On the other hand, it is difficult to imagine a practical example of creating a multi-dimensional distribution of more than 2 variables. 
+Step (d) is a single-dimensional distribution calculation, which is not expected to be computationally complex.
 
 Coverage-Driven Test Generation 
 ================================

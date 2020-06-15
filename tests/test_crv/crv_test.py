@@ -286,7 +286,7 @@ def test_post_randomize():
     assert foo.n > 5
 
 def test_issue28():
-    print("Test issue28")
+    print("Running test_issue28")
 
     class Foo(crv.Randomized):
         def __init__(self):
@@ -311,7 +311,7 @@ def test_issue28():
         assert foo.dac_min == 2
 
 def test_issue27():
-    print("Test issue27")
+    print("Running test_issue27")
 
     exception_fired = [False]
 
@@ -331,7 +331,7 @@ def test_issue27():
     assert exception_fired[0]
 
 def test_issue34():
-    print("Test issue34")
+    print("Running test_issue34")
     #testcase provided by sjalloq, thanks!
 
     class RandTrxn(crv.Randomized):
@@ -367,6 +367,7 @@ def test_issue34():
     assert 4900 < reads < 5100 #expect 50/50 distribution
          
 def test_cdtg():
+    print("Running test_cdtg")
 
     covered = []
 
@@ -390,6 +391,7 @@ def test_cdtg():
     assert coverage.coverage_db["top.cdtg_coverage"].coverage == 10 #expect all covered in 10 steps
         
 def test_issue40():
+    print("Running test_issue40")
 
     class my_random(crv.Randomized):  
 
@@ -415,4 +417,71 @@ def test_issue40():
     assert 0 <= my_obj.x <= 5
     assert 0 <= my_obj.y <= 6
     assert my_obj.x + my_obj.y + my_obj.z < 10
+
+def test_solve_order_tutorial():
+    print("Running solve_order_tutorial")
+
+    class TutorialSolveOrder(crv.Randomized):  
+
+        def __init__(self):
+            crv.Randomized.__init__(self)    
+            self.x = 0
+            self.y = 0
+            self.z = 0  
+            
+            self.add_rand("x", list(range(128)))
+            self.add_rand("y", list(range(128)))
+            self.add_rand("z", list(range(128)))
+    
+            self.add_constraint(lambda x, y: x < 2*y)
+            self.add_constraint(lambda y, z: y + z == 128)
+            self.add_constraint(lambda x, z: (x+z)%2 == 0)  
+
+            self.solve_order('x', ['y', 'z'])  
+            
+    for _ in range(10):
+
+        r = TutorialSolveOrder()
+        r.randomize()
+        print(f"x={r.x} y={r.y} z={r.z}")
+
+        assert(r.x < 2*r.y)
+        assert(r.y + r.z == 128)
+        assert((r.x + r.z) % 2 == 0)
+
+def test_constraints_tutorial():
+    print("Running test_constraints_tutorial")
+
+    class RandExample(crv.Randomized):
+        
+        def __init__(self, z):
+            crv.Randomized.__init__(self)                   # initialize super-class
+            self.x = 0                                      # define class members and their default values
+            self.y = 0
+            self.z = z                                      # "z" is not a random variable
+            
+            self.x_c = lambda x, z: x > z                   # define a constraint that is not used by default
+            
+            self.add_rand("x", list(range(16)))             # full 4-bit space
+            self.add_rand("y", list(range(16)))             # full 4-bit space
+            
+            # add constraints
+            self.add_constraint(lambda x, z : x != z)       # constraint for standalone "x"
+            self.add_constraint(lambda y, z : y <= z)       # constraint for standalone "y"
+            self.add_constraint(lambda x, y : x + y == 8)   # constraint for combined "x" and "y"          
+            
+        
+    for ii in range(8):
+
+        foo = RandExample(ii)
+        foo.randomize()
+        assert foo.x != foo.z
+        assert foo.y <= foo.z
+        assert foo.x + foo.y == 8
+
+        bar = RandExample(ii)
+        bar.randomize_with(bar.x_c)
+        assert bar.x > bar.z
+        assert bar.y <= bar.z
+        assert bar.x + bar.y == 8
 
