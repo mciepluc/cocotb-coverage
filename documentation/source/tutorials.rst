@@ -10,7 +10,7 @@ There are prepared in particular for SystemVerilog users that would like to use 
 It is required that user at this level:
 
 - has basic knowledge of Python (including collections and *lambda* expressions that are going to be used quite frequently),
-- understands main cocotb concepts (coroutines, forks, yielding events),
+- understands main cocotb concepts (coroutines, forks, awaiting events),
 - has basic knowledge of SystemVerilog (or any other HVL) coverage and randomization constructs.
 
 Functional Coverage
@@ -72,7 +72,7 @@ In cocotb-coverage, the sampling function signature must contains the objects th
 Coverage Section
 ~~~~~~~~~~~~~~~~
 
-`Coverage Section <coverage_section>` is a concept introduced in cocotb-coverage, that allows for separating the coverage code from the testbench code.
+`Coverage_section <coverage_section>` is a concept introduced in cocotb-coverage, that allows for separating the coverage code from the testbench code.
 It allows for packing the coverage primitives in separated blocks of code. 
 Below code examples are equivalent.
 
@@ -387,13 +387,13 @@ To make it useful, it is required to use the same trick as for sequences coverag
 Not all concurrent assertions can be translated this way, but for some of them it is possible. 
 Of course, sampling event can be delayed as well, which makes things a bit easier.
 
-Let's implement an example of sequence that checks if after 'x' is set, 'y' must be set within 5 cycles.
+Let's implement an example of sequence that checks if after "x" is set, "y" must be set within 5 cycles.
 
 .. code-block:: systemverilog
 
     assert x |-> ##[1:5] y else $error("assertion error");
 
-To do that, we need to create a coroutine that monitors 'x' assertion and stores 'y' values for next 5 cycles.
+To do that, we need to create a coroutine that monitors "x" assertion and stores "y" values for next 5 cycles.
 After that time, the `CoverCheck` can be evaluated.
 
 .. code-block:: python
@@ -441,8 +441,8 @@ Consequently, the top `CoverItem` will contain all defined primitives, and its m
 To make some nodes more important than the others, weights can be used. 
 
 Weight is an integer that increases the size of the `CoverItem`. 
-For example, by default a `CoverPoint` containing 3 bins will have size of 3.
-When assigning a weight of 2, its size will be equal to 6.
+For example, by default a `CoverPoint` containing 3 bins will have size of '3'.
+When assigning a weight of '2', its size will be equal to '6'.
 Of course, it will also increase sizes of all containers containing this `CoverPoint` and consequently will increase its impact on coverage level.
 
 Please note that coverage primitives are not balanced. 
@@ -485,7 +485,7 @@ Attribute "At Least"
     
 The "at least" attribute is used to define how many times a particular bin must be hit to be considered covered.
 Note that a `CoverCross` will work independently from its `CoverPoints <CoverPoint>`.
-E.g. if "at least" attribute (>1) is defined for `CoverPoints <CoverPoint>` only, `CoverCross` coverage may be increasing while `CoverPoints <CoverPoint>` coverage is still 0.
+E.g. if "at least" attribute (> 1) is defined for `CoverPoints <CoverPoint>` only, `CoverCross` coverage may be increasing while `CoverPoints <CoverPoint>` coverage is still '0'.
 
 A simple example below shows usage of "at least" attribute.
 
@@ -520,8 +520,8 @@ Attribute "Injection"
 ~~~~~~~~~~~~~~~~~~~~~
 
 The "injection" attribute is used to describe if more that one bin can be hit at once. 
-By default it is set "True", meaning only one bin (first one that matches) can be hit at single sampling event.
-Setting this attribute to "false" allows for matching multiple bins. 
+By default it is set 'True', meaning only one bin (first one that matches) can be hit at single sampling event.
+Setting this attribute to 'False' allows for matching multiple bins. 
 
 Below example shows the difference in behavior between similar `CoverPoints <CoverPoint>`.
 
@@ -564,9 +564,9 @@ The implemented randomized class should:
 - define random variables using `add_rand` method,
 - define constraints (optionally).
 
-Constraints are arbitrary functions of random (and possibly non-random) class members that return "True"/"False" value. 
+Constraints are arbitrary functions of random (and possibly non-random) class members that return 'True'/'False' value. 
 
-Let's take an example from `ASIC WORLD Random Constraints Tutorial - part 6 <http://http://www.asic-world.com/systemverilog/random_constraint6.html>`_.
+Let's take an example from `ASIC WORLD Random Constraints Tutorial - part 6 <http://www.asic-world.com/systemverilog/random_constraint6.html>`_.
 
 .. code-block:: systemverilog
 
@@ -608,7 +608,7 @@ Implementing the same functionality in cocotb-coverage is pretty straightforward
             self.add_rand("src_port", list(range(256))) # full 8-bit space
             self.add_rand("des_port", list(range(256))) # full 8-bit space
 
-            # define constraints (divide into two constraints compared to SV example)
+            # define constraints (divide into two functions compared to SV example)
             def c_1(src_port):
                 return src_port in (list(range(0x0A + 1)) + [14, 20])
                 
@@ -624,7 +624,7 @@ Implementing the same functionality in cocotb-coverage is pretty straightforward
             print("des port : %0x", self.des_port)
 
 
-Please note, that in this particular example there is no need to define constraints, as domains can be defined straightway:
+Please note, that in this particular example there is no need to define constraints, as domains can be defined such that constraints are already included:
 
 .. code-block:: python
 
@@ -633,6 +633,7 @@ Please note, that in this particular example there is no need to define constrai
       
 More complex functions can be also used as constraints, similar way as more complex constructs in SystemVerilog.
 An example of conditional constraint is presented below. 
+SystemVerilog code:
 
 .. code-block:: systemverilog
 
@@ -645,6 +646,8 @@ An example of conditional constraint is presented below.
         length <= 5000;
       }
     }
+    
+Python code:
         
 .. code-block:: python
 
@@ -657,7 +660,7 @@ An example of conditional constraint is presented below.
 Constraints Properties
 ~~~~~~~~~~~~~~~~~~~~~~
 
-As already said, in cocotb-coverage constraints are simple functions that return "True"/"False" value.
+As already said, in cocotb-coverage constraints are simple functions that return 'True'/'False' value.
 They are hard constraints, which means that in case they cannot be resolved, an exception is risen.
 It is possible to define constraints that return numerical value.
 They are called distributions and described in a separate section.
@@ -686,8 +689,8 @@ Not-randomized class members ("z") can be used in the constraints as well.
             
             self.x_c = lambda x, z: x > z                   # define a constraint that is not used by default
             
-            self.add_rand("x", list(range(16)))             # full 4-bit space
-            self.add_rand("y", list(range(16)))             # full 4-bit space
+            self.add_rand("x", list(range(16)))             # 4-bit space 
+            self.add_rand("y", list(range(16)))             # 4-bit space
             
             # add constraints
             self.add_constraint(lambda x, z : x != z)       # constraint for standalone "x"
@@ -728,15 +731,88 @@ We can try to resolve "x" before "y" or the opposite.
 If we resolve "x" before "y", in the first step only constraint "x != z" is to be met. 
 So it may happen that if e.g. "x = 10" is picked, in the next step constraint "x + y == 8" cannot be satisfied under any condition.
 If we resolve "y" before "x", in the first step only constraint "y <= z" will be applied. 
-So, in case that "z > 8" next step constraints again may be not met.
-`solve_order` method is discussed more in the "performance" section.
+So, in case that "z" is set to the value grater than '8', next step constraints again may be not met.
+`Solve_order <solve_order>` method is discussed more in the "performance" section.
   
 
 Distributions
 -------------
 
-TODO
+Distributions work the same way as constraints. 
+The only difference is that distribution should return a numerical value, instead of 'True'/'False'. 
+All other properties are the same.
+So, for a single random variable one hard constraint and one distribution may be assigned.
 
+The numerical value returned by the distribution function is a weight of the particular solution.
+Let's take another example from `ASIC WORLD Random Constraints Tutorial - part 7 <http://www.asic-world.com/systemverilog/random_constraint7.html>`_.
+
+.. code-block:: systemverilog
+
+    constraint src {
+      src_port dist {
+        0  := 1,
+        1  := 1,
+        2  := 5,
+        4  := 1
+      };
+    }
+    constraint des {
+      des_port dist {
+        [0   : 5   ] :/ 5,
+        [6   : 100 ] := 1,
+        [101 : 200 ] := 1,
+        [201 : 255 ] := 1
+      };
+    } 
+
+For "src_port" variable, weights are assigned to particular solutions.
+For "des_port" variable, weights are assigned to all items in defined ranges, except the first one ([0:5]), where assigned weight must be divided by range size.
+Equivalent cocotb-coverage distribution functions would be the following:
+
+.. code-block:: python
+
+    def src(src_port):
+        return 5 if src_port == 2 else 1
+        
+    def des(des_port):
+        return 1 if 6 <= des_port <= 255 else 5/6 
+        
+Distribution may be also used for implementation of soft constraints.
+The difference between soft and hard constraint, is that exception is not risen when the soft constraint cannot be resolved.
+With distributions, it can be done by assigning weight of '0' to the solution. 
+In case that all solutions with non-zero weights have been rejected, the zero-weight solution may still be picked.
+The simplest way to make a soft constraint from the hard one is to cast it to the *int* type.
+
+.. code-block:: python
+
+    def cstr_hard(x, y):
+        return x < y         # True or False returned - hard constraint 
+        
+    def cstr_soft(des_port):
+        return int(x < y)    # 0 or 1 returned - soft constraint 
+
+
+Distributions can easily incorporate the probability density functions, also for more than one dimension.
+To do that, scipy.stats package can be used.
+
+.. code-block:: python
+
+  import scipy.stats
+  
+    ...
+  
+    self.add_rand(x, list(range(100)))
+    self.add_rand(y, list(range(100)))
+  
+    # definition of the probability distribution and parameters
+    self.rv = scipy.stats.multivariate_normal([40, 60], [[20, 10], [10, 50]])   
+
+    # definition of the cocotb-coverage distribution - simple call of the probability density function (PDF)
+    def dist_multivariate_normal(x, y):
+        return self.rv.pdf(x, y)   
+
+    self.add_constraint(dist_multivariate_normal)       
+        
 
 
 Randomization Order and Performance Issues
@@ -808,7 +884,7 @@ That reduces the search space to 128 + 128x128.
     # randomize "x" first, then "y" and "z"
     self.solve_order('x', ['y', 'z'])  
     
-Note that in this particular example, the different randomization order ("y" and "z" before "x") cannot be used, because in case that "y"=0 is picked, first constraint cannot be met.
+Note that in this particular example, the different randomization order ("y" and "z" before "x") cannot be used, because in case that "y = 0" is picked, first constraint cannot be met.
 
 The same rules as above are valid for distributions. 
 
@@ -844,7 +920,7 @@ In the given example, 10 randomizations are required to fully cover the *CdtgRan
 
 .. code-block:: python
 
-    covered = [] #list to store already covered data
+    covered = [] # list to store already covered data
 
     class CdtgRandomized(crv.Randomized):
 
@@ -852,7 +928,8 @@ In the given example, 10 randomizations are required to fully cover the *CdtgRan
             crv.Randomized.__init__(self)
             self.x = 0
             self.add_rand("x", list(range(10)))
-            self.add_constraint(lambda x : x not in covered) # do not pick items from the list
+            # define hard constraint - do not pick items from the "covered" list
+            self.add_constraint(lambda x : x not in covered) 
 
     @coverage.CoverPoint("top.cdtg_coverage", xf = lambda obj : obj.x, bins = list(range(10))) 
     def sample_coverage(obj):
