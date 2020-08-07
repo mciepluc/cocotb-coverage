@@ -24,7 +24,7 @@ FIFO reports its status using the following output bits:
 Testbench
 ---------
 
-The test envinroment randomly performs a read/write operation and checks the data consistency. 
+The test environment randomly performs a read/write operation and checks the data consistency. 
 The functional coverage checks if read/write operation has been executed in any possible FIFO state.
 
 The FIFO status is represented in an instance of the class *FifoStatus*.
@@ -47,7 +47,7 @@ This object contains the method *update()*, which reads the status of the DUT.
             self.underflow = (self.dut.fifo_underflow == 1)
 
 The main data processing routine is defined in the function *process_data()*. 
-This function returns the read or written data and the status if the operation ended successfully (which depends on the FIFO satus). 
+This function returns the read or written data and the status if the operation ended successfully (which depends on the FIFO status). 
 The functional coverage is sampled at this function.
 
 .. code-block:: python
@@ -92,8 +92,8 @@ The functional coverage is sampled at this function.
         return data, success  
 
 A simple FIFO model is implemented as a double-ended queue. 
-At each successfull write to the FIFO, the data is also written to the FIFO model. 
-At each successfull read from the FIFO, the data concistency is checked with the FIFO model (and removed from the queue).
+At each successful write to the FIFO, the data is also written to the FIFO model. 
+At each successful read from the FIFO, the data consistency is checked with the FIFO model (and removed from the queue).
 
 .. code-block:: python
 
@@ -143,7 +143,7 @@ DUT
 
 The packet switch has a single data input interface (*datain_data*) and two data output interfaces (*dataout0_data*, *dataout1_data*). 
 There are data valid strobes associated with each interface (*datain_valid*, *dataout0_valid*, *dataout1_valid*).
-Depending on configuration, the packet transmitted to the input interface is passed to first, second or both otuput interfaces.
+Depending on configuration, the packet transmitted to the input interface is passed to first, second or both output interfaces.
 
 There is also a configuration interface which allows for accessing the configuration registers (write-only).
 The register write operation is performed when the write strobe is high (*crtl_wr*). The *ctrl_data* is written under the *ctrl_addr* address.
@@ -169,8 +169,8 @@ There are the following configuration registers:
 | 101        | uppoer size limit for length based filtering       |
 +------------+----------------------------------------------------+
 
-If the packed is not filtered or opion to transmit packet on both interfaces is enabled, it is transmitted on interface 0. 
-If the packed is filtered or opion to transmit packet on both interfaces is enabled, it is transmitted on interface 1. 
+If the packet is not filtered or option to transmit packet on both interfaces is enabled, it is transmitted on interface 0. 
+If the packet is filtered or option to transmit packet on both interfaces is enabled, it is transmitted on interface 1. 
 
 The packet structure is as follows:
 
@@ -185,7 +185,7 @@ The packet structure is as follows:
 +------------+----------------------------------------------------+
 
 The packet bytes are transmitted starting from byte 0. 
-The packed is transmitted continuously, so data valid strobe must not be deasserted in the middle of the packet.
+The packet is transmitted continuously, so data valid strobe must not be deasserted in the middle of the packet.
 The transition 1 -> 0 on the data valid strobe denotes the end of the packet. 
 
 The address-based filtering is active when packet address bits marked by the mask (reg address 011) are equal to the filtering address bits (reg address 010). 
@@ -194,7 +194,7 @@ The length-based filtering is active when packet length is greater than or equal
 Testbench
 ---------
 
-The test envinroment randomly transfers packets using different configurations and checks the data consistency. 
+The test environment randomly transfers packets using different configurations and checks the data consistency. 
 
 The packet object is represented by the *Packet* class.
 Randomized are fields Address (*addr*) and Length (*len*). 

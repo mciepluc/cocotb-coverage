@@ -522,6 +522,9 @@ class CoverPoint(CoverItem):
         @wraps(f)
         def _wrapped_function(*cb_args, **cb_kwargs):
 
+            if len(cb_kwargs) > 0:
+                raise Exception("Use of keyword args in sampling function call is not supported.")
+
             # if transformation function not defined, simply return arguments
             if self._transformation is None:
                 if self._vname is None:
@@ -694,6 +697,9 @@ class CoverCross(CoverItem):
         @wraps(f)
         def _wrapped_function(*cb_args, **cb_kwargs):
 
+            if len(cb_kwargs) > 0:
+                raise Exception("Use of keyword args in sampling function call is not supported.")
+
             current_coverage = self.coverage
 
             hit_lists = []
@@ -795,6 +801,9 @@ class CoverCheck(CoverItem):
     def __call__(self, f):
         @wraps(f)
         def _wrapped_function(*cb_args, **cb_kwargs):
+
+            if len(cb_kwargs) > 0:
+                raise Exception("Use of keyword args in sampling function call is not supported.")
 
             # if pass function not defined always return True
             if self._f_pass is None:
@@ -923,7 +932,7 @@ def merge_coverage(logger, merged_file_name, *files):
     """ Function used for merging coverage metrics in XML and YAML format.
 
     Args:
-        logger (str): a logger function
+        logger (func): a logger function
         merged_file_name (str): output filename
         *files ((multiple) str): comma separated filenames to merge coverage from
 
@@ -1120,3 +1129,4 @@ def coverageSection(*coverItems):
         "Function coverageSection() is deprecated, use coverage_section() instead"
     )
     return coverage_section(*coverItems)
+

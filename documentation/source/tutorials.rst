@@ -20,7 +20,7 @@ Translating SystemVerilog Constructs to cocotb-coverage
 -------------------------------------------------------
 
 In SystemVerilog *covergroups*, *coverpoints* and *cross* are unique language constructs.
-There is no a straightforward equivalence between these constructs and cocotb-coverage objects.
+There is no straightforward equivalence between these constructs and cocotb-coverage objects.
 However, a `CoverItem` is a coverage objects container, so roughly corresponds to a *covergroup*.
 `CoverPoint` and `CoverCross` correspond to SV *coverpoint* and *cross*.
 
@@ -72,7 +72,7 @@ In cocotb-coverage, the sampling function signature must contains the objects th
 Coverage Section
 ~~~~~~~~~~~~~~~~
 
-`Coverage_section <coverage_section>` is a concept introduced in cocotb-coverage, that allows for separating the coverage code from the testbench code.
+`coverage_section` is a concept introduced in cocotb-coverage, that allows for separating the coverage code from the testbench code.
 It allows for packing the coverage primitives in separated blocks of code. 
 Below code examples are equivalent.
 
