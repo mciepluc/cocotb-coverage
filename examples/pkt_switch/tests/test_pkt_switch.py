@@ -36,8 +36,9 @@ transmitted correctly.
 
 import cocotb
 from cocotb.triggers import Timer, RisingEdge, ReadOnly
-from cocotb.drivers import BusDriver
-from cocotb.monitors import BusMonitor
+
+from cocotb_bus.drivers import BusDriver
+from cocotb_bus.monitors import BusMonitor
 
 from cocotb_coverage.coverage import *
 from cocotb_coverage.crv import *
