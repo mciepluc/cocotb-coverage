@@ -271,11 +271,12 @@ def test_xml_export():
                 assert elem_parent in child_parent_dict[elem]
 
     # Check YML
-    yml_db = yaml.safe_load(open(yml_filename, 'r'))
-    for item in yml_db:
-        if isinstance(coverage.coverage_db[item], coverage.CoverPoint):
-            #assert if correct coverage levels
-            assert yml_db[item]['coverage'] == coverage.coverage_db[item].coverage
+    with open(yml_filename, 'r') as fp:
+        yml_db = yaml.safe_load(fp)
+        for item in yml_db:
+            if isinstance(coverage.coverage_db[item], coverage.CoverPoint):
+                #assert if correct coverage levels
+                assert yml_db[item]['coverage'] == coverage.coverage_db[item].coverage
 
     # check if yaml and coverage databases have equal size
     assert len(yml_db) == len(coverage.coverage_db) 
