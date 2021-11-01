@@ -4,15 +4,15 @@ All rights reserved.
 
 Author: Marek Cieplucha, https://github.com/mciepluc
 
-Redistribution and use in source and binary forms, with or without modification, 
-are permitted provided that the following conditions are met (The BSD 2-Clause 
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met (The BSD 2-Clause
 License):
 
-1. Redistributions of source code must retain the above copyright notice, 
+1. Redistributions of source code must retain the above copyright notice,
 this list of conditions and the following disclaimer.
 
-2. Redistributions in binary form must reproduce the above copyright notice, 
-this list of conditions and the following disclaimer in the documentation and/or 
+2. Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions and the following disclaimer in the documentation and/or
 other materials provided with the distribution.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -27,11 +27,11 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. '''
 
 """
-Example packet switch testbench with functional coverage and constrained 
+Example packet switch testbench with functional coverage and constrained
 randomization. Simple packet switch is a module that routes packets from the
 input interface to output interfaces (1 or 2) depending on configured address
 or length based filter. Test generates random packets and checks if it has been
-transmitted correctly. 
+transmitted correctly.
 """
 
 import cocotb
@@ -121,10 +121,10 @@ def clock_gen(signal, period=10000):
 @cocotb.test()
 def pkt_switch_test(dut):
     """ PKT_SWITCH Test """
-    
+
     log = cocotb.logging.getLogger("cocotb.test") # logger instance
     cocotb.fork(clock_gen(dut.clk, period=100))   # start clock running
-    
+
     # reset & init
     dut.rst_n <= 1
     dut.datain_data <= 0
@@ -132,12 +132,12 @@ def pkt_switch_test(dut):
     dut.ctrl_addr <= 0
     dut.ctrl_data <= 0
     dut.ctrl_wr <= 0
-    
+
     yield Timer(1000)
     dut.rst_n <= 0
     yield Timer(1000)
     dut.rst_n <= 1
-    
+
     # procedure of writing configuration registers
     @cocotb.coroutine
     def write_config(addr, data):
@@ -167,12 +167,12 @@ def pkt_switch_test(dut):
     expected_data1 = [] # queue of expeced packet at interface 1
 
 
-    def scoreboarding(pkt, queue_expected):       
+    def scoreboarding(pkt, queue_expected):
         assert pkt.addr == queue_expected[0].addr
         assert pkt.len == queue_expected[0].len
         assert pkt.payload == queue_expected[0].payload
         queue_expected.pop()
-        
+
     monitor0.add_callback(lambda _ : scoreboarding(_, expected_data0))
     monitor1.add_callback(lambda _ : scoreboarding(_, expected_data1))
     monitor0.add_callback(lambda _ : log.info("Receiving packet on interface 0 (packet not filtered)"))
@@ -181,38 +181,38 @@ def pkt_switch_test(dut):
     # functional coverage - check received packet
 
     @CoverPoint(
-      "top.packet_length", 
+      "top.packet_length",
       xf = lambda pkt, event, addr, mask, ll, ul: pkt.len,    # packet length
       bins = list(range(3,32))                                # may be 3 ... 31 bytes
     )
     @CoverPoint("top.event", vname="event", bins = ["DIS", "TB", "AF", "LF"])
     @CoverPoint(
-      "top.filt_addr",  
-      xf = lambda pkt, event, addr, mask, ll, ul:         # filtering based on particular bits in header 
+      "top.filt_addr",
+      xf = lambda pkt, event, addr, mask, ll, ul:         # filtering based on particular bits in header
         (addr & mask & 0x0F) if event == "AF" else None,  # check only if event is "address filtering"
       bins = list(range(16)),                             # check only 4 LSBs if all options tested
     )
     @CoverPoint(
-      "top.filt_len_eq", 
-      xf = lambda pkt, event, addr, mask, ll, ul: ll == ul,  # filtering of a single packet length 
+      "top.filt_len_eq",
+      xf = lambda pkt, event, addr, mask, ll, ul: ll == ul,  # filtering of a single packet length
       bins = [True, False]
     )
     @CoverPoint(
-      "top.filt_len_ll", 
+      "top.filt_len_ll",
       vname = "ll",                    # lower limit of packet length
       bins = list(range(3,32))         # 3 ... 31
     )
     @CoverPoint(
-      "top.filt_len_ul", 
+      "top.filt_len_ul",
       vname = "ul",                    # upper limit of packet length
       bins = list(range(3,32))         # 3 ... 31
     )
     @CoverCross(
-      "top.filt_len_ll_x_packet_length", 
+      "top.filt_len_ll_x_packet_length",
       items = ["top.packet_length", "top.filt_len_ll"]
     )
     @CoverCross(
-      "top.filt_len_ul_x_packet_length", 
+      "top.filt_len_ul_x_packet_length",
       items = ["top.packet_length", "top.filt_len_ul"]
     )
     def log_sequence(pkt, event, addr, mask, ll, ul):
@@ -249,11 +249,11 @@ def pkt_switch_test(dut):
         # expect the packet on the particular interface
         if event == "DIS":
             yield disable_filtering()
-            expected_data0.append(pkt)       
+            expected_data0.append(pkt)
         elif event == "TB":
             yield enable_transmit_both()
             expected_data0.append(pkt)
-            expected_data1.append(pkt)    
+            expected_data1.append(pkt)
         elif event == "AF":
             yield enable_addr_filtering(addr, mask)
             if ((pkt.addr & mask) == (addr & mask)):
@@ -265,7 +265,7 @@ def pkt_switch_test(dut):
             if (low_limit <= pkt.len <= up_limit):
                 expected_data1.append(pkt)
             else:
-                expected_data0.append(pkt)       
+                expected_data0.append(pkt)
 
         # wait DUT
         yield driver.send(pkt)
@@ -273,7 +273,7 @@ def pkt_switch_test(dut):
         yield RisingEdge(dut.clk)
 
         # LOG the action
-        log_sequence(pkt, event, addr, mask, low_limit, up_limit)      
+        log_sequence(pkt, event, addr, mask, low_limit, up_limit)
 
     # print coverage report
     coverage_db.report_coverage(log.info, bins=False)

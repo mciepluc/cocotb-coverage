@@ -24,7 +24,7 @@ FIFO reports its status using the following output bits:
 Testbench
 ---------
 
-The test environment randomly performs a read/write operation and checks the data consistency. 
+The test environment randomly performs a read/write operation and checks the data consistency.
 The functional coverage checks if read/write operation has been executed in any possible FIFO state.
 
 The FIFO status is represented in an instance of the class *FifoStatus*.
@@ -36,8 +36,8 @@ This object contains the method *update()*, which reads the status of the DUT.
 
         def __init__(self, dut):
             self.dut = dut
-        
-        @cocotb.coroutine   
+
+        @cocotb.coroutine
         def update(self):
             yield ReadOnly()
             self.empty = (self.dut.fifo_empty == 1)
@@ -46,8 +46,8 @@ This object contains the method *update()*, which reads the status of the DUT.
             self.overflow = (self.dut.fifo_overflow == 1)
             self.underflow = (self.dut.fifo_underflow == 1)
 
-The main data processing routine is defined in the function *process_data()*. 
-This function returns the read or written data and the status if the operation ended successfully (which depends on the FIFO status). 
+The main data processing routine is defined in the function *process_data()*.
+This function returns the read or written data and the status if the operation ended successfully (which depends on the FIFO status).
 The functional coverage is sampled at this function.
 
 .. code-block:: python
@@ -63,7 +63,7 @@ The functional coverage is sampled at this function.
       CoverCross("top.rwXfull", items = ["top.rw", "top.fifo_full"]),
       CoverCross("top.rwXthreshold", items = ["top.rw", "top.fifo_threshold"]),
       CoverCross("top.rwXoverflow", items = ["top.rw", "top.fifo_overflow"]),
-      CoverCross("top.rwXunderflow", items = ["top.rw", "top.fifo_underflow"]) 
+      CoverCross("top.rwXunderflow", items = ["top.rw", "top.fifo_underflow"])
     )
 
     @FIFO_Coverage
@@ -73,26 +73,26 @@ The functional coverage is sampled at this function.
         if rw: #read
             yield RisingEdge(dut.clk)
             #even if fifo empty, try to access in order to reach underflow status
-            if (status.empty): 
+            if (status.empty):
                 success = False
             else:
                 data = int(dut.data_out)
             dut.rd <= 1
             yield RisingEdge(dut.clk)
-            dut.rd <= 0  
-        elif not rw:   
+            dut.rd <= 0
+        elif not rw:
             yield RisingEdge(dut.clk)
             dut.data_in <= data
             dut.wr <= 1
             yield RisingEdge(dut.clk)
-            dut.wr <= 0    
+            dut.wr <= 0
             #if FIFO full, data was not written (overflow status)
             if status.full:
-                success = False        
-        return data, success  
+                success = False
+        return data, success
 
-A simple FIFO model is implemented as a double-ended queue. 
-At each successful write to the FIFO, the data is also written to the FIFO model. 
+A simple FIFO model is implemented as a double-ended queue.
+At each successful write to the FIFO, the data is also written to the FIFO model.
 At each successful read from the FIFO, the data consistency is checked with the FIFO model (and removed from the queue).
 
 .. code-block:: python
@@ -111,37 +111,37 @@ The main loop performs random operations in the following order:
     for _ in range(100): #is that enough repetitions to ensure coverage goal? Check out!
         rw = random.choice([True, False])
         data = random.randint(0,255) if not rw else None
-        
+
         #call coroutines
         yield status.update() #check FIFO state
         #process data, and check if succeded
         data, success = yield process_data(data, rw, status)
-        
+
         if rw: #read
             if success:
                 #if successful read, check read data with the model
-                assert(data == fifo_model.pop()) 
-                log.info("Data read from fifo: %X", data)  
+                assert(data == fifo_model.pop())
+                log.info("Data read from fifo: %X", data)
             else:
-                log.info("Data NOT read, fifo EMPTY!") 
+                log.info("Data NOT read, fifo EMPTY!")
         else: #write
             if success:
                 #if successful write, append written data to the model
-                fifo_model.appendleft(data) 
-                log.info("Data written to fifo: %X", data)  
+                fifo_model.appendleft(data)
+                log.info("Data written to fifo: %X", data)
             else:
-                log.info("Data NOT written, fifo FULL!")  
+                log.info("Data NOT written, fifo FULL!")
 
 Packet Switch (examples/pkt_switch)
 ===================================
 
-This example tests a simple packet switch. 
+This example tests a simple packet switch.
 The switch routes an incoming packet to one or both of the two outgoing interfaces, depending on configuration.
 
 DUT
 ---
 
-The packet switch has a single data input interface (*datain_data*) and two data output interfaces (*dataout0_data*, *dataout1_data*). 
+The packet switch has a single data input interface (*datain_data*) and two data output interfaces (*dataout0_data*, *dataout1_data*).
 There are data valid strobes associated with each interface (*datain_valid*, *dataout0_valid*, *dataout1_valid*).
 Depending on configuration, the packet transmitted to the input interface is passed to first, second or both output interfaces.
 
@@ -169,8 +169,8 @@ There are the following configuration registers:
 | 101        | uppoer size limit for length based filtering       |
 +------------+----------------------------------------------------+
 
-If the packet is not filtered or option to transmit packet on both interfaces is enabled, it is transmitted on interface 0. 
-If the packet is filtered or option to transmit packet on both interfaces is enabled, it is transmitted on interface 1. 
+If the packet is not filtered or option to transmit packet on both interfaces is enabled, it is transmitted on interface 0.
+If the packet is filtered or option to transmit packet on both interfaces is enabled, it is transmitted on interface 1.
 
 The packet structure is as follows:
 
@@ -184,20 +184,20 @@ The packet structure is as follows:
 | 2-31       | Payload                                            |
 +------------+----------------------------------------------------+
 
-The packet bytes are transmitted starting from byte 0. 
+The packet bytes are transmitted starting from byte 0.
 The packet is transmitted continuously, so data valid strobe must not be deasserted in the middle of the packet.
-The transition 1 -> 0 on the data valid strobe denotes the end of the packet. 
+The transition 1 -> 0 on the data valid strobe denotes the end of the packet.
 
-The address-based filtering is active when packet address bits marked by the mask (reg address 011) are equal to the filtering address bits (reg address 010). 
+The address-based filtering is active when packet address bits marked by the mask (reg address 011) are equal to the filtering address bits (reg address 010).
 The length-based filtering is active when packet length is greater than or equal to lower size limit (reg address 100) and lower than or equal to upper size limit (reg address 101).
- 
+
 Testbench
 ---------
 
-The test environment randomly transfers packets using different configurations and checks the data consistency. 
+The test environment randomly transfers packets using different configurations and checks the data consistency.
 
 The packet object is represented by the *Packet* class.
-Randomized are fields Address (*addr*) and Length (*len*). 
+Randomized are fields Address (*addr*) and Length (*len*).
 The Payload (*payload*) content is randomized using the `post_randomize` method.
 
 .. code-block:: python
@@ -226,23 +226,23 @@ Driver (*driver*) is connected to the *datain* interface, while two monitors are
     monitor1 = PacketIFMonitor(dut, name="dataout1", clock=dut.clk)
 
 For scoreboarding there are queues implemented, associated with each output interface.
-The monitors callbacks are used to check if received transaction has been expected (for both interfaces separately). 
+The monitors callbacks are used to check if received transaction has been expected (for both interfaces separately).
 
 .. code-block:: python
 
     expected_data0 = [] #queue of expeced packet at interface 0
     expected_data1 = [] #queue of expeced packet at interface 1
 
-    def scoreboarding(pkt, queue_expected):       
+    def scoreboarding(pkt, queue_expected):
         assert pkt.addr == queue_expected[0].addr
         assert pkt.len == queue_expected[0].len
         assert pkt.payload == queue_expected[0].payload
         queue_expected.pop()
-        
+
     monitor0.add_callback(lambda _ : scoreboarding(_, expected_data0))
     monitor1.add_callback(lambda _ : scoreboarding(_, expected_data1))
 
-The functional coverage is sampled at the logging function call. 
+The functional coverage is sampled at the logging function call.
 The following features are covered:
 
 - length of the packet,
@@ -254,38 +254,38 @@ The following features are covered:
 .. code-block:: python
 
     @CoverPoint(
-      "top.packet_length", 
+      "top.packet_length",
       xf = lambda pkt, event, addr, mask, ll, ul: pkt.len,    # packet length
       bins = list(range(3,32))                                # may be 3 ... 31 bytes
     )
     @CoverPoint("top.event", vname="event", bins = ["DIS", "TB", "AF", "LF"])
     @CoverPoint(
-      "top.filt_addr",  
-      xf = lambda pkt, event, addr, mask, ll, ul:         # filtering based on particular bits in header 
+      "top.filt_addr",
+      xf = lambda pkt, event, addr, mask, ll, ul:         # filtering based on particular bits in header
         (addr & mask & 0x0F) if event == "AF" else None,  # check only if event is "address filtering"
       bins = list(range(16)),                             # check only 4 LSBs if all options tested
     )
     @CoverPoint(
-      "top.filt_len_eq", 
-      xf = lambda pkt, event, addr, mask, ll, ul: ll == ul,  # filtering of a single packet length 
+      "top.filt_len_eq",
+      xf = lambda pkt, event, addr, mask, ll, ul: ll == ul,  # filtering of a single packet length
       bins = [True, False]
     )
     @CoverPoint(
-      "top.filt_len_ll", 
+      "top.filt_len_ll",
       vname = "ll",                    # lower limit of packet length
       bins = list(range(3,32))         # 3 ... 31
     )
     @CoverPoint(
-      "top.filt_len_ul", 
+      "top.filt_len_ul",
       vname = "ul",                    # upper limit of packet length
       bins = list(range(3,32))         # 3 ... 31
     )
     @CoverCross(
-      "top.filt_len_ll_x_packet_length", 
+      "top.filt_len_ll_x_packet_length",
       items = ["top.packet_length", "top.filt_len_ll"]
     )
     @CoverCross(
-      "top.filt_len_ul_x_packet_length", 
+      "top.filt_len_ul_x_packet_length",
       items = ["top.packet_length", "top.filt_len_ul"]
     )
 
@@ -296,7 +296,7 @@ The main loop performs random operations in the following order:
 - request the driver to send the packet,
 - log the performed transaction (functional coverage is sampled here).
 
-The scoreboarding is done concurrently to the main loop operations. 
+The scoreboarding is done concurrently to the main loop operations.
 
 .. code-block:: python
 
@@ -319,11 +319,11 @@ The scoreboarding is done concurrently to the main loop operations.
         # expect the packet on the particular interface
         if event == "DIS":
             yield disable_filtering()
-            expected_data0.append(pkt)       
+            expected_data0.append(pkt)
         elif event == "TB":
             yield enable_transmit_both()
             expected_data0.append(pkt)
-            expected_data1.append(pkt)    
+            expected_data1.append(pkt)
         elif event == "AF":
             yield enable_addr_filtering(addr, mask)
             if ((pkt.addr & mask) == (addr & mask)):
@@ -335,7 +335,7 @@ The scoreboarding is done concurrently to the main loop operations.
             if (low_limit <= pkt.len <= up_limit):
                 expected_data1.append(pkt)
             else:
-                expected_data0.append(pkt)       
+                expected_data0.append(pkt)
 
         # wait DUT
         yield driver.send(pkt)
@@ -343,6 +343,6 @@ The scoreboarding is done concurrently to the main loop operations.
         yield RisingEdge(dut.clk)
 
         # LOG the action
-        log_sequence(pkt, event, addr, mask, low_limit, up_limit) 
+        log_sequence(pkt, event, addr, mask, low_limit, up_limit)
 
 

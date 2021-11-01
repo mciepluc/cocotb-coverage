@@ -48,7 +48,7 @@ class SimpleRandomized(crv.Randomized):
 
         self.add_constraint(lambda x, y: x < y)
 
-#simple randomization - test if simple constraint works and if all 
+#simple randomization - test if simple constraint works and if all
 #possible SimpleRandomize.size values picked
 def test_simple_0():
     print("Running test_simple_0")
@@ -165,7 +165,7 @@ def test_solve_order():
         print("delay1 = %d, delay2 = %d, delay3 = %d, data = %d" %
               (x.delay1, x.delay2, x.delay3, x.data))
         assert x.delay1 <= x.delay2 # check if c1 satisfied
- 
+
 #test exception throw when overconstraint occurs      
 def test_cannot_resolve():
     print("Running test_cannot_resolve")
@@ -182,7 +182,7 @@ def test_cannot_resolve():
             assert 0 
         except Exception:
             assert 1     
- 
+
 #test solutions with zero probability            
 def test_zero_probability():
     print("Running test_zero_probability")
@@ -270,7 +270,7 @@ def test_cover():
     coverage_level = coverage.coverage_db["top"].coverage
 
     assert coverage_level > coverage_size / 2  # expect >50%
-    
+
 #test if post_randomize works
 def test_post_randomize():
     print("Running test_post_randomize")
@@ -351,11 +351,11 @@ def test_issue34():
 
             #this line is required to make sure rnw is randomized first
             self.solve_order("rnw", "addr")
-           
+
         def __repr__(self):
             return "rnw=%s addr=%s"%(
-              self.rnw, self.addr)      
-          
+              self.rnw, self.addr)
+
 
     reads = 0
     spi = RandTrxn()
@@ -365,7 +365,7 @@ def test_issue34():
             reads +=1
 
     assert 4900 < reads < 5100 #expect 50/50 distribution
-         
+
 def test_cdtg():
     print("Running test_cdtg")
 
@@ -379,7 +379,7 @@ def test_cdtg():
             self.add_rand("x", list(range(10)))
             self.add_constraint(lambda x : x not in covered)
 
-    @coverage.CoverPoint("top.cdtg_coverage", xf = lambda obj : obj.x, bins = list(range(10))) 
+    @coverage.CoverPoint("top.cdtg_coverage", xf = lambda obj : obj.x, bins = list(range(10)))
     def sample_coverage(obj):
         covered.append(obj.x)
 
@@ -389,26 +389,26 @@ def test_cdtg():
         sample_coverage(obj)
 
     assert coverage.coverage_db["top.cdtg_coverage"].coverage == 10 #expect all covered in 10 steps
-        
+
 def test_issue40():
     print("Running test_issue40")
 
-    class my_random(crv.Randomized):  
+    class my_random(crv.Randomized):
 
         def __init__(self):
-            super().__init__()    
+            super().__init__()
             self.x = 0
             self.y = 0
-            self.z = 0  
-            
+            self.z = 0
+
             self.add_rand('x', list(range(10)))
             self.add_rand('y', list(range(10)))
             self.add_rand('z', list(range(10)))
-            
+
             self.add_constraint(lambda x: 0 <= x <= 5)
             self.add_constraint(lambda y: 0 <= y <= 6)
-            self.add_constraint(lambda x,y,z: x+y+z < 15)    
-            
+            self.add_constraint(lambda x,y,z: x+y+z < 15)
+
             self.solve_order(['x', 'y'], 'z')
 
     my_obj = my_random()
@@ -421,24 +421,24 @@ def test_issue40():
 def test_solve_order_tutorial():
     print("Running solve_order_tutorial")
 
-    class TutorialSolveOrder(crv.Randomized):  
+    class TutorialSolveOrder(crv.Randomized):
 
         def __init__(self):
-            crv.Randomized.__init__(self)    
+            crv.Randomized.__init__(self)
             self.x = 0
             self.y = 0
-            self.z = 0  
-            
+            self.z = 0
+
             self.add_rand("x", list(range(128)))
             self.add_rand("y", list(range(128)))
             self.add_rand("z", list(range(128)))
-    
+
             self.add_constraint(lambda x, y: x < 2*y)
             self.add_constraint(lambda y, z: y + z == 128)
-            self.add_constraint(lambda x, z: (x+z)%2 == 0)  
+            self.add_constraint(lambda x, z: (x+z)%2 == 0)
 
-            self.solve_order('x', ['y', 'z'])  
-            
+            self.solve_order('x', ['y', 'z'])
+
     for _ in range(10):
 
         r = TutorialSolveOrder()
@@ -453,24 +453,24 @@ def test_constraints_tutorial():
     print("Running test_constraints_tutorial")
 
     class RandExample(crv.Randomized):
-        
+
         def __init__(self, z):
             crv.Randomized.__init__(self)                   # initialize super-class
             self.x = 0                                      # define class members and their default values
             self.y = 0
             self.z = z                                      # "z" is not a random variable
-            
+
             self.x_c = lambda x, z: x > z                   # define a constraint that is not used by default
-            
+
             self.add_rand("x", list(range(16)))             # full 4-bit space
             self.add_rand("y", list(range(16)))             # full 4-bit space
-            
+
             # add constraints
             self.add_constraint(lambda x, z : x != z)       # constraint for standalone "x"
             self.add_constraint(lambda y, z : y <= z)       # constraint for standalone "y"
-            self.add_constraint(lambda x, y : x + y == 8)   # constraint for combined "x" and "y"          
-            
-        
+            self.add_constraint(lambda x, y : x + y == 8)   # constraint for combined "x" and "y"
+
+
     for ii in range(8):
 
         foo = RandExample(ii)

@@ -7,9 +7,9 @@ Functional Coverage and Constrained Randomization Extensions for Cocotb
 
 This package allows you to use constrained randomization and functional coverage techniques known from CRV (constrained random verification) and MDV (metric-driven verification) methodologies, available in SystemVerilog or _e_. Such extensions enable the implementation of an advanced verification environment for complex projects.
 
-The implemented functionality is intended to be easily understandable by SystemVerilog users and provides significant extensions compared to Hardware Verification Languages. 
+The implemented functionality is intended to be easily understandable by SystemVerilog users and provides significant extensions compared to Hardware Verification Languages.
 
-There is an option to export coverage database to a readable XML or YML format and a function which allows for merging such files is provided. 
+There is an option to export coverage database to a readable XML or YML format and a function which allows for merging such files is provided.
 
 ### Installation
 The package can be installed with pip. Version ```1.1.0``` is the latest one and recommended.
@@ -21,7 +21,7 @@ pip install cocotb-coverage
 
 * cocotb core package - [cocotb](https://github.com/potentialventures/cocotb)
 * Constraint Solving Problem resolver used in this project - [python-constraint](https://github.com/python-constraint/python-constraint)
-* [documentation](https://cocotb-coverage.readthedocs.io/en/latest/) 
+* [documentation](https://cocotb-coverage.readthedocs.io/en/latest/)
 * [PyPI package](https://pypi.org/project/cocotb-coverage/1.1.dev0)
 * DVCon 2017 Paper - [New Constrained Random and MDV Methodology using Python](http://events.dvcon.org/2017/proceedings/papers/02_3.pdf)
 * DVCon 2017 Presentation - [SLIDES](http://events.dvcon.org/2017/proceedings/slides/02_3.pdf)
@@ -53,7 +53,7 @@ class Point(crv.Randomized):
 p = Point(0,0)
 
 for _ in range (10):
-    
+
     # cover example arithmetic properties
     @CoverPoint("top.x_negative", xf = lambda point : point.x < 0, bins = [True, False])
     @CoverPoint("top.y_negative", xf = lambda point : point.y < 0, bins = [True, False])
@@ -61,12 +61,12 @@ for _ in range (10):
     @CoverCross("top.cross", items = ["top.x_negative", "top.y_negative"])
     def plot_point(point):
         ...
-    
+
     p.randomize()  # randomize object
     plot_point(p)  # call a function which will sample the coverage
 
 # export coverage to XML
 coverage_db.export_to_xml(filename="coverage.xml")
 # export coverage to YAML
-coverage_db.export_to_yaml(filename="coverage.yml")              
+coverage_db.export_to_yaml(filename="coverage.yml")
 ```
