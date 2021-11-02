@@ -892,7 +892,7 @@ def coverage_section(*coverItems):
 
     Example:
 
-    >>> my_coverage = coverage.coverageSection(
+    >>> my_coverage = coverage.coverage_section(
     ...     coverage.CoverPoint("x", ...),
     ...     coverage.CoverPoint("y", ...),
     ...     coverage.CoverCross("z", ...),
