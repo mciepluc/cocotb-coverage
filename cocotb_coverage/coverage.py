@@ -477,7 +477,7 @@ class CoverPoint(CoverItem):
             return super(CoverPoint, cls).__new__(CoverPoint)
 
     def __init__(self, name, vname=None, xf=None, rel=None, bins=[],
-                 bins_labels=None, weight=1, at_least=1, inj=True):
+                 bins_labels=None, weight=1, at_least=1, inj=False):
         if not name in coverage_db:
             CoverItem.__init__(self, name)
             if self._parent is None:
@@ -582,7 +582,7 @@ class CoverPoint(CoverItem):
                     if bin in self._bins_callbacks:
                         self._bins_callbacks[bin]()
                     # if injective function, continue through all bins
-                    if self._injection:
+                    if not self._injection:
                         break
 
             # notify parent about new coverage level
