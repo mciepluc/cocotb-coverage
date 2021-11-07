@@ -3,20 +3,20 @@
 #
 # Author: Marek Cieplucha, https://github.com/mciepluc
 #
-# Redistribution and use in source and binary forms, with or without 
-# modification, are permitted provided that the following conditions are met 
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met
 # (The BSD 2-Clause License):
 #
 # 1. Redistributions of source code must retain the above copyright notice,
 # this list of conditions and the following disclaimer.
 #
 # 2. Redistributions in binary form must reproduce the above copyright notice,
-# this list of conditions and the following disclaimer in the documentation 
+# this list of conditions and the following disclaimer in the documentation
 # and/or other materials provided with the distribution.
 #
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
-# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
 # ARE DISCLAIMED. IN NO EVENT SHALL POTENTIAL VENTURES LTD BE LIABLE FOR ANY
 # DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
 # (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
@@ -48,7 +48,7 @@ setup(
     author='Marek Cieplucha',
     author_email='',
     packages=find_packages(),
-    install_requires= ['cocotb', 'python-constraint', 'pyyaml'],
+    install_requires= ['cocotb ~= 1.5', 'python-constraint', 'pyyaml'],
     python_requires=">=3.3",
     platforms='any',
     classifiers=[

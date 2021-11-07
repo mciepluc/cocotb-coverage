@@ -10,5 +10,4 @@ TESTS_DIR = $(abspath $(dir $(abspath $(shell pwd))))
 
 VERILOG_SOURCES = $(TESTS_DIR)/sample_module.sv
 
-include $(shell cocotb-config --makefiles)/Makefile.inc
 include $(shell cocotb-config --makefiles)/Makefile.sim
