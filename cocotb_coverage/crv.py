@@ -313,13 +313,13 @@ class Randomized(object):
                 applied.
 
         """
-        overwritten_constrains = []
+        overwritten_constraints = []
 
         # add new constraints
         for cstr in constraints:
             overwritten = self.add_constraint(cstr)
             if overwritten:
-                overwritten_constrains.append(overwritten)
+                overwritten_constraints.append(overwritten)
 
         raise_exception = False
         try:
@@ -332,7 +332,7 @@ class Randomized(object):
             self.del_constraint(cstr)
 
         # add back overwritten constraints
-        for cstr in overwritten_constrains:
+        for cstr in overwritten_constraints:
             self.add_constraint(cstr)
 
         if raise_exception:
