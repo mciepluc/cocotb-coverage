@@ -41,7 +41,7 @@ Functions:
 
 * :func:`~.coverage_section` - allows for convenient definition of multiple
   coverage items and combines them into a single decorator.
-* :func:`~.merge_coverage` - merges coverage files in XML or YAML format. 
+* :func:`~.merge_coverage` - merges coverage files in XML or YAML format.
 """
 
 from functools import wraps
@@ -231,7 +231,7 @@ class CoverItem(object):
     ``CoverItem`` objects are created automatically. This is a base class for
     all coverage primitives (:class:`CoverPoint`, :class:`CoverCross` or
     :class:`CoverCheck`). It may be used as a base class for other,
-    user-defined coverage types. 
+    user-defined coverage types.
     """
 
     def __init__(self, name):
@@ -259,7 +259,7 @@ class CoverItem(object):
         coverage_db[name] = self
 
     def _update_coverage(self, coverage):
-        """Update the parent coverage level as requested by derived classes. 
+        """Update the parent coverage level as requested by derived classes.
         """
         current_coverage = self._coverage
         self._coverage += coverage
@@ -273,23 +273,23 @@ class CoverItem(object):
                 self._threshold_callbacks[ii]()
 
     def _update_size(self, size):
-        """Update the parent size as requested by derived classes. 
+        """Update the parent size as requested by derived classes.
         """
         self._size += size
         if self._parent is not None:
             self._parent._update_size(size)
 
     def add_threshold_callback(self, callback, threshold):
-        """Add a threshold callback to the :class:`CoverItem` or any its 
-        derived class. 
+        """Add a threshold callback to the :class:`CoverItem` or any its
+        derived class.
 
-        A callback is called (once) when the threshold is crossed, so that 
-        coverage level of this particular cover group (or other object) exceeds 
-        defined % value. 
+        A callback is called (once) when the threshold is crossed, so that
+        coverage level of this particular cover group (or other object) exceeds
+        defined % value.
 
         Args:
             callback (func): a callback function.
-            threshold (int): a callback call threshold (% coverage). 
+            threshold (int): a callback call threshold (% coverage).
 
         Examples:
 
@@ -310,11 +310,11 @@ class CoverItem(object):
     def add_bins_callback(self, callback, bins):
         """Add a bins callback to the derived class of the :class:`CoverItem`.
 
-        A callback is called (once) when a specific bin is covered. 
+        A callback is called (once) when a specific bin is covered.
 
         Args:
             callback (func): a callback function.
-            bins: a particular bin (type depends on bins type). 
+            bins: a particular bin (type depends on bins type).
 
         Examples:
 
@@ -332,7 +332,7 @@ class CoverItem(object):
         """Return size of the coverage primitive.
 
         Size of the cover group (or other coverage primitive) is returned. This
-        is a total number of bins associated with assigned weights. 
+        is a total number of bins associated with assigned weights.
 
         Returns:
             int: size of the coverage primitive.
@@ -343,9 +343,9 @@ class CoverItem(object):
     def coverage(self):
         """Return size of the covered bins in the coverage primitive.
 
-        Number of the covered bins in cover group (or other coverage primitive) 
-        is returned. This is a number of covered bins associated with assigned 
-        weights. 
+        Number of the covered bins in cover group (or other coverage primitive)
+        is returned. This is a number of covered bins associated with assigned
+        weights.
 
         Returns:
             int: size of the covered bins.
@@ -356,7 +356,7 @@ class CoverItem(object):
     def cover_percentage(self):
         """Return coverage level of the coverage primitive.
 
-        Percent of the covered bins in cover group (or other coverage 
+        Percent of the covered bins in cover group (or other coverage
         primitive) is returned. This is basically a :meth:`coverage()` divided
         by :meth:`size()` in %.
 
@@ -371,7 +371,7 @@ class CoverItem(object):
         of hits. If labels are assigned to bins, labels are returned instead
         of bins values.
 
-        A dictionary (bins) -> (number of hits) is returned. 
+        A dictionary (bins) -> (number of hits) is returned.
 
         Returns:
             dict: dictionary associating number of hits with a particular bins.
@@ -383,7 +383,7 @@ class CoverItem(object):
 
     @property
     def new_hits(self):
-        """Return bins hit at last sampling event. Works only for objects 
+        """Return bins hit at last sampling event. Works only for objects
         deriving from :class:`CoverItem`.
 
         Returns:
@@ -394,7 +394,7 @@ class CoverItem(object):
 
     @property
     def weight(self):
-        """Return weight of the coverage primitive. Works only for objects 
+        """Return weight of the coverage primitive. Works only for objects
         deriving from :class:`CoverItem`.
 
         Returns:
@@ -404,7 +404,7 @@ class CoverItem(object):
 
     @property
     def at_least(self):
-        """Return ``at_least`` attribute of the coverage primitive. Works only 
+        """Return ``at_least`` attribute of the coverage primitive. Works only
         for objects deriving from :class:`CoverItem`.
 
         Returns:
@@ -414,46 +414,46 @@ class CoverItem(object):
 
 
 class CoverPoint(CoverItem):
-    """Class used to create coverage points as decorators. 
+    """Class used to create coverage points as decorators.
 
-    This decorator samples members of the decorated function (its signature). 
+    This decorator samples members of the decorated function (its signature).
     Sampling matches predefined bins according to the rule:
     ``rel(xf(args), bin) == True``
 
     Args:
-        name (str): a ``CoverPoint`` path and name, defining its position in a 
+        name (str): a ``CoverPoint`` path and name, defining its position in a
             coverage trie.
-        vname (str, optional): a name of the variable to be covered (use this 
+        vname (str, optional): a name of the variable to be covered (use this
             only when covering a *single* variable in the decorated function
             signature).
-        xf (func, optional): a transformation function which transforms 
-            arguments of the decorated function. If ``vname`` and ``xf`` are 
-            not defined, matched is a single input argument (if only one 
-            exists) or a tuple (if multiple exist). Note that the ``self`` 
-            argument is *always* removed from the argument list. 
-        bins (list): a list of bins objects to be matched. Note that for 
-            non-trivial types, a ``rel`` must always be defined (or the 
+        xf (func, optional): a transformation function which transforms
+            arguments of the decorated function. If ``vname`` and ``xf`` are
+            not defined, matched is a single input argument (if only one
+            exists) or a tuple (if multiple exist). Note that the ``self``
+            argument is *always* removed from the argument list.
+        bins (list): a list of bins objects to be matched. Note that for
+            non-trivial types, a ``rel`` must always be defined (or the
             equality operator must be overloaded).
         bins_labels (list, optional): a list of labels (str) associated with
             defined bins. Both lists lengths must match.
-        rel (func, optional): a relation function which defines the bins 
+        rel (func, optional): a relation function which defines the bins
             matching relation (by default, the equality operator ``==``).
         weight (int, optional): a ``CoverPoint`` weight (by default ``1``).
-        at_least (int, optional): the number of hits per bins to be considered 
+        at_least (int, optional): the number of hits per bins to be considered
             as covered (by default ``1``).
-        inj (bool, optional): "injection" feature, defines that more than a 
+        inj (bool, optional): "injection" feature, defines that more than a
             single bin can be matched at one sampling (default ``False``).
 
     Example:
 
     >>> @coverage.CoverPoint( # cover (arg/2) < 1 ... 4 (4 bins)
-    ...     name = "top.parent.coverpoint1", 
-    ...     xf = lambda x : x/2, 
-    ...     rel = lambda x, y : x < y, 
+    ...     name = "top.parent.coverpoint1",
+    ...     xf = lambda x : x/2,
+    ...     rel = lambda x, y : x < y,
     ...     bins = list(range(5))
     ... )
     >>> @coverage.CoverPoint( # cover (arg) == 1 ... 4 (4 bins)
-    ...     name = "top.parent.coverpoint2", 
+    ...     name = "top.parent.coverpoint2",
     ...     vname = "arg",
     ...     bins = list(range(5))
     ... )
@@ -461,7 +461,7 @@ class CoverPoint(CoverItem):
     ...     ...
 
     >>> @coverage.CoverPoint( # cover (arg1, arg2) == (1, 1) or (0, 0) (2 bins)
-    ...     name = "top.parent.coverpoint3", 
+    ...     name = "top.parent.coverpoint3",
     ...     bins = [(1, 1), (0, 0)]
     ... )
     >>> def decorated_func1(self, arg1, arg2):
@@ -615,39 +615,39 @@ class CoverPoint(CoverItem):
 class CoverCross(CoverItem):
     """Class used to create coverage crosses as decorators.
 
-    This decorator samples members of the decorated function (its signature). 
-    It matches tuples cross-bins which are Cartesian products of bins defined 
+    This decorator samples members of the decorated function (its signature).
+    It matches tuples cross-bins which are Cartesian products of bins defined
     in :class:`CoverPoints <CoverPoint>` (items).
 
     Args:
-        name (str): a ``CoverCross`` path and name, defining its position in a 
+        name (str): a ``CoverCross`` path and name, defining its position in a
             coverage trie.
-        items (list): a list of :class:`CoverPoints <CoverPoint>` by names, 
+        items (list): a list of :class:`CoverPoints <CoverPoint>` by names,
             to create a Cartesian product of cross-bins.
         ign_bins (list, optional): a list of bins to be ignored.
         weight (int, optional): a ``CoverCross`` weight (by default ``1``).
-        at_least (int, optional): the number of hits per bin to be considered 
+        at_least (int, optional): the number of hits per bin to be considered
             as covered (by default ``1``).
 
     Example:
 
     >>> @coverage.CoverPoint(
-    ...     name = "top.parent.coverpoint1", 
-    ...     xf = lambda x, y: x, 
+    ...     name = "top.parent.coverpoint1",
+    ...     xf = lambda x, y: x,
     ...     bins = list(range(5)) # 4 bins in total
     ... )
     >>> @coverage.CoverPoint(
     ...     name = "top.parent.coverpoint2",
-    ...     xf = lambda x, y: y, 
+    ...     xf = lambda x, y: y,
     ...     bins = list(range(5)) # 4 bins in total
     ... )
     >>> @coverage.CoverCross(
-    ...     name = "top.parent.covercross", 
+    ...     name = "top.parent.covercross",
     ...     items = ["top.parent.coverpoint1", "top.parent.coverpoint2"],
     ...     ign_bins = [(1, 1), (4, 4)], # 4x4 - 2 = 14 bins in total
     ... )
     >>> def decorated_func(self, arg_a, arg_b):
-    >>> # bin from the bins list [(1, 2), (1, 3)...(4, 3)] will be matched 
+    >>> # bin from the bins list [(1, 2), (1, 3)...(4, 3)] will be matched
     >>> # when a tuple (x=arg_a, y=arg_b) was sampled at this function call.
     ...     ...
     """
@@ -741,30 +741,30 @@ class CoverCross(CoverItem):
 
 
 class CoverCheck(CoverItem):
-    """Class used to create coverage checks as decorators. 
+    """Class used to create coverage checks as decorators.
 
     It is a simplified :class:`CoverPoint` with defined 2 bins:
-    *PASS* and *FAIL* and ``f_pass()`` and ``f_fail()`` functions. 
+    *PASS* and *FAIL* and ``f_pass()`` and ``f_fail()`` functions.
 
     Args:
-        name (str): a ``CoverCheck`` path and name, defining its position in a 
+        name (str): a ``CoverCheck`` path and name, defining its position in a
             coverage trie.
         f_fail: a failure condition function - if it returns ``True``, the
             coverage level is set to ``0`` permanently.
-        f_pass: a pass condition function - if it returns ``True``, the 
-            coverage level is set to ``weight`` after ``at_least`` hits. 
+        f_pass: a pass condition function - if it returns ``True``, the
+            coverage level is set to ``weight`` after ``at_least`` hits.
         weight (int, optional): a ``CoverCheck`` weight (by default ``1``).
-        at_least (int, optional): the number of hits of the ``f_pass`` function 
-            to consider a particular ``CoverCheck`` as covered. 
+        at_least (int, optional): the number of hits of the ``f_pass`` function
+            to consider a particular ``CoverCheck`` as covered.
 
     Example:
 
     >>> @coverage.CoverCheck(
-    ...     name = "top.parent.check", 
-    ...     f_fail = lambda x : x == 0, 
+    ...     name = "top.parent.check",
+    ...     f_fail = lambda x : x == 0,
     ...     f_pass = lambda x : x < 5)
     >>> def decorated_fun(self, arg):
-    >>> # CoverCheck is 100% covered when (arg < 5) and never (arg == 0) was 
+    >>> # CoverCheck is 100% covered when (arg < 5) and never (arg == 0) was
     >>> # sampled. CoverCheck is set to 0 unconditionally when at least once
     >>> # (arg == 0) was sampled.
     ...     ...
@@ -926,7 +926,7 @@ def _indent(elem, level=0):
             elem.tail = i
     else:
         if level and (not elem.tail or not elem.tail.strip()):
-            elem.tail = i   
+            elem.tail = i
 
 def merge_coverage(logger, merged_file_name, *files):
     """ Function used for merging coverage metrics in XML and YAML format.
@@ -972,7 +972,7 @@ def merge_coverage(logger, merged_file_name, *files):
                 try:
                     yaml_parsed = yaml.safe_load(stream)
                 except yaml.YAMLError as exc:
-                    logger(exc)   
+                    logger(exc)
             return yaml_parsed
         dbs = [load_yaml(f, logger) for f in files]
         logger(f'YAML fileformat detected')
@@ -988,7 +988,7 @@ def merge_coverage(logger, merged_file_name, *files):
         logger(f'Merged {l} {"file" if l==1 else "files"}')
         if filetype == 'xml':
             _indent(merged_db)
-            et.ElementTree(merged_db).write(merged_file_name)    
+            et.ElementTree(merged_db).write(merged_file_name)
         else:
             with open(merged_file_name, 'w') as outfile:
                 yaml.dump(merged_db, outfile, default_flow_style=False)
@@ -1004,12 +1004,12 @@ def merge_coverage(logger, merged_file_name, *files):
             new_elements.sort(key=lambda _: _.attrib['abs_name'].count('.'))
             # Bins that will be updated
             items_to_update = [elem for elem in db.iter() if 'bin' in elem.tag
-                               and elem not in new_elements] 
+                               and elem not in new_elements]
         else:
             pre_merge_db_keys = list(merged_db.keys())
             new_elements = [elem_key for elem_key in db if elem_key not in merged_db]
             # Elements with bins that will be updated
-            items_to_update = [elem_key for elem_key in db 
+            items_to_update = [elem_key for elem_key in db
                              if 'bins:_hits' in list(db[elem_key].keys())
                              and elem_key not in new_elements]
 
@@ -1068,7 +1068,7 @@ def merge_coverage(logger, merged_file_name, *files):
                 name_to_elem[abs_name] = et.SubElement(
                     name_to_elem[parent_name], elem.tag, attrib=elem.attrib)
                 if parent_name in pre_merge_db_dict:
-                    update_parent(name=abs_name, bin_update=False, 
+                    update_parent(name=abs_name, bin_update=False,
                                   new_element_update=True)
             else:
                 parent_name = get_parent_name(elem)
@@ -1108,7 +1108,7 @@ def merge_coverage(logger, merged_file_name, *files):
                     merged_db[elem]['coverage'] = merged_db[elem]['coverage']+coverage_upd
                     merged_db[elem]['cover_percentage'] = round(
                         merged_db[elem]['coverage']*100/merged_db[elem]['size'], 2)
-                    update_parent(elem, coverage_upd) # update cover recursively 
+                    update_parent(elem, coverage_upd) # update cover recursively
 
     merge()
 

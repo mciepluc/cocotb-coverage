@@ -4,15 +4,15 @@ All rights reserved.
 
 Author: Marek Cieplucha, https://github.com/mciepluc
 
-Redistribution and use in source and binary forms, with or without modification, 
-are permitted provided that the following conditions are met (The BSD 2-Clause 
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met (The BSD 2-Clause
 License):
 
-1. Redistributions of source code must retain the above copyright notice, 
+1. Redistributions of source code must retain the above copyright notice,
 this list of conditions and the following disclaimer.
 
-2. Redistributions in binary form must reproduce the above copyright notice, 
-this list of conditions and the following disclaimer in the documentation and/or 
+2. Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions and the following disclaimer in the documentation and/or
 other materials provided with the distribution.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
@@ -75,46 +75,46 @@ class FooBar():
 
 #coverpoint in class
 def test_coverpoint_in_class():
-    print("Running test_coverpoint_in_class")            
+    print("Running test_coverpoint_in_class")
 
     fb = FooBar()
-    assert coverage.coverage_db["top.t2.in_class"].size == 2 
-    assert coverage.coverage_db["top.t2.in_class"].coverage == 0 
-    assert coverage.coverage_db["top.t2.in_class"].detailed_coverage["foo"] == 0 
-    assert coverage.coverage_db["top.t2.in_class"].detailed_coverage["bar"] == 0 
+    assert coverage.coverage_db["top.t2.in_class"].size == 2
+    assert coverage.coverage_db["top.t2.in_class"].coverage == 0
+    assert coverage.coverage_db["top.t2.in_class"].detailed_coverage["foo"] == 0
+    assert coverage.coverage_db["top.t2.in_class"].detailed_coverage["bar"] == 0
     fb.cover("bar")
     assert coverage.coverage_db["top.t2.in_class"].coverage == 1
-    assert coverage.coverage_db["top.t2.in_class"].detailed_coverage["foo"] == 0 
-    assert coverage.coverage_db["top.t2.in_class"].detailed_coverage["bar"] == 1 
+    assert coverage.coverage_db["top.t2.in_class"].detailed_coverage["foo"] == 0
+    assert coverage.coverage_db["top.t2.in_class"].detailed_coverage["bar"] == 1
     fb.cover("bar")
     assert coverage.coverage_db["top.t2.in_class"].coverage == 1
-    assert coverage.coverage_db["top.t2.in_class"].detailed_coverage["foo"] == 0 
-    assert coverage.coverage_db["top.t2.in_class"].detailed_coverage["bar"] == 2  
+    assert coverage.coverage_db["top.t2.in_class"].detailed_coverage["foo"] == 0
+    assert coverage.coverage_db["top.t2.in_class"].detailed_coverage["bar"] == 2
     fb.cover("foo")
-    assert coverage.coverage_db["top.t2.in_class"].coverage == 2 
-    assert coverage.coverage_db["top.t2.in_class"].detailed_coverage["foo"] == 1 
-    assert coverage.coverage_db["top.t2.in_class"].detailed_coverage["bar"] == 2 
-  
+    assert coverage.coverage_db["top.t2.in_class"].coverage == 2
+    assert coverage.coverage_db["top.t2.in_class"].detailed_coverage["foo"] == 1
+    assert coverage.coverage_db["top.t2.in_class"].detailed_coverage["bar"] == 2
+
 
 #injective coverpoint - matching multiple bins at once
 def test_injective_coverpoint():
-    print("Running test_injective_coverpoint")      
+    print("Running test_injective_coverpoint")
 
     def is_divider(number, divider):
         return number % divider == 0
-  
+
     @coverage.CoverPoint("top.t3.inj", rel = is_divider, bins = [1, 2, 3, 5, 7, 11, 13, 17], inj = False)
     def sample(x):
         pass
 
-    assert coverage.coverage_db["top.t3.inj"].size == 8 
-    assert coverage.coverage_db["top.t3.inj"].coverage == 0  
+    assert coverage.coverage_db["top.t3.inj"].size == 8
+    assert coverage.coverage_db["top.t3.inj"].coverage == 0
     sample(17) #covers 1 and 17
-    assert coverage.coverage_db["top.t3.inj"].coverage == 2 
+    assert coverage.coverage_db["top.t3.inj"].coverage == 2
     sample(30) #covers 2,3 and 5
-    assert coverage.coverage_db["top.t3.inj"].coverage == 5 
+    assert coverage.coverage_db["top.t3.inj"].coverage == 5
     sample(77) #covers 7 and 11
-    assert coverage.coverage_db["top.t3.inj"].coverage == 7 
+    assert coverage.coverage_db["top.t3.inj"].coverage == 7
 
 #cross
 def test_covercross():
@@ -212,7 +212,7 @@ def test_callbacks():
     coverage.coverage_db["top.t6"].add_threshold_callback(threshold_callback_3,40)
     coverage.coverage_db["top.t6.c2"].add_bins_callback(bins_callback_1,3)
 
-    for i in range(100):            
+    for i in range(100):
         sample(i)
         current_step += 1
 
@@ -226,22 +226,22 @@ def test_xml_export():
     from xml.etree import ElementTree as et
     import yaml
     print("Running test_xml_export")
-    
+
     #test CoverCheck
-    @coverage.CoverCheck(name = "top.t7.failed_check", 
-                         f_fail = lambda i : i == 0, 
+    @coverage.CoverCheck(name = "top.t7.failed_check",
+                         f_fail = lambda i : i == 0,
                          f_pass = lambda i : i > 5)
-    @coverage.CoverCheck(name = "top.t7.passing_check", 
-                         f_fail = lambda i : i > 100, 
+    @coverage.CoverCheck(name = "top.t7.passing_check",
+                         f_fail = lambda i : i > 100,
                          f_pass = lambda i : i < 50)
     def sample(i):
         pass
-    
-    for i in range(50):            
+
+    for i in range(50):
         sample(i)
-        
+
     #coverage.coverage_db.report_coverage(print, bins=False)
-    
+
     # Export coverage to XML, check if file exists
     xml_filename = 'test_xml_export_output.xml'
     yml_filename = 'test_yaml_export_output.yml'
@@ -249,11 +249,11 @@ def test_xml_export():
     coverage.coverage_db.export_to_yaml(filename='test_yaml_export_output.yml')
     assert os.path.isfile(xml_filename)
     assert os.path.isfile(yml_filename)
-    
-    # Read back the XML           
+
+    # Read back the XML
     xml_db = et.parse(xml_filename).getroot()
     # dict - child: [all parents for that name]
-    child_parent_dict = {} 
+    child_parent_dict = {}
     for p in xml_db.iter():
         for c in p:
             if 'bin' not in c.tag:
@@ -261,7 +261,7 @@ def test_xml_export():
                     child_parent_dict[c.tag] = [p.tag]
                 else:
                     child_parent_dict[c.tag].append(p.tag)
-     
+
     # Check if coverage_db items are XML, with proper parents
     for item in coverage.coverage_db:
         if '.' in item:
@@ -279,9 +279,9 @@ def test_xml_export():
                 assert yml_db[item]['coverage'] == coverage.coverage_db[item].coverage
 
     # check if yaml and coverage databases have equal size
-    assert len(yml_db) == len(coverage.coverage_db) 
+    assert len(yml_db) == len(coverage.coverage_db)
 
-# test xml/yaml merge - static example covering 
+# test xml/yaml merge - static example covering
 # adding new elements and updating existing
 def test_xml_merge():
     import os.path
@@ -291,13 +291,13 @@ def test_xml_merge():
 
     coverage.merge_coverage(print, filename, 'cov_short1_input.xml', 'cov_short2_input.xml', 'cov_short3_input.xml')
     assert os.path.isfile(filename)
-    
-    # Read back the XML           
+
+    # Read back the XML
     xml_db = et.parse(filename).getroot()
     assert xml_db.tag == 'top'
     assert xml_db.attrib['coverage'] == '102'
     assert xml_db.attrib['size'] == '104'
-    
+
 def test_yaml_merge():
     import os.path
     import yaml
@@ -306,16 +306,16 @@ def test_yaml_merge():
 
     coverage.merge_coverage(print, filename, 'coverage1_input.yml', 'coverage2_input.yml',
                             'coverage3_input.yml')
-    
+
     assert os.path.isfile(filename)
-    
+
     #Read back the XML
     with open(filename, 'r') as stream:
         try:
             yaml_parsed = yaml.safe_load(stream)
         except yaml.YAMLError as exc:
             print(exc)
-            
+
     assert yaml_parsed['top']['coverage'] == 52
     assert yaml_parsed['top']['size'] == 122
     assert 'top.coveritemm.signall.cp10' in list(yaml_parsed.keys())
@@ -326,10 +326,10 @@ def test_covercheck():
 
     @coverage.CoverCheck("top.t8.check", f_pass = lambda x : x > 0, f_fail = lambda x : x < 0, at_least = 2)
     def sample(x):
-        pass 
+        pass
 
-    assert coverage.coverage_db["top.t8.check"].size == 1 
-    assert coverage.coverage_db["top.t8.check"].coverage == 0 
+    assert coverage.coverage_db["top.t8.check"].size == 1
+    assert coverage.coverage_db["top.t8.check"].coverage == 0
     sample(0)
     sample(1)
     assert coverage.coverage_db["top.t8.check"].coverage == 0 #should not be covered yet
@@ -360,7 +360,7 @@ def test_print_coverage():
     #check if only t9 printed
     #print(print_)
     assert print_[0].strip().startswith("top.t9")
-    
+
 
 def test_bins_labels():
     print("Running test_bins_labels")
