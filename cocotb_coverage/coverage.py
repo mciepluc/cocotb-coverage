@@ -52,6 +52,7 @@ import itertools
 import warnings
 import copy
 import threading
+import logging
 
 class CoverageDB(dict):
     """ Class (singleton) containing coverage database.
@@ -701,6 +702,7 @@ class CoverCross(CoverItem):
                 raise Exception("Use of keyword args in sampling function call is not supported.")
 
             current_coverage = self.coverage
+            self._new_hits = []
 
             hit_lists = []
             for cp_name in self._items:
@@ -711,6 +713,7 @@ class CoverCross(CoverItem):
             for x_bin_hit in list(itertools.product(*hit_lists)):
                 if x_bin_hit in self._hits:
                     self._hits[x_bin_hit] += 1
+                    self._new_hits.append(x_bin_hit)
                     # check bins callbacks
                     if x_bin_hit in self._bins_callbacks:
                         self._bins_callbacks[x_bin_hit]()
