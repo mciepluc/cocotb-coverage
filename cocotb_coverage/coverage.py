@@ -379,7 +379,9 @@ class CoverItem(object):
         """
         coverage = {}
         for child in self._children:
-            coverage.append(child.detailed_coverage)
+            name_hierarchy = child._name.split(".")
+            child_name = ".".join(name_hierarchy[1:]) if len(name_hierarchy) > 1 else child._name
+            coverage[child_name] = child.detailed_coverage
         return coverage
 
     @property
