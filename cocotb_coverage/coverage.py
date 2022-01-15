@@ -441,8 +441,8 @@ class CoverPoint(CoverItem):
         weight (int, optional): a ``CoverPoint`` weight (by default ``1``).
         at_least (int, optional): the number of hits per bins to be considered
             as covered (by default ``1``).
-        inj (bool, optional): "injection" feature, defines that more than a
-            single bin can be matched at one sampling (default ``False``).
+        inj (bool, optional): "injection" feature, defines that only one
+            bin can be matched at single sampling (default ``True``).
 
     Example:
 
