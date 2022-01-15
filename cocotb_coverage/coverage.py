@@ -85,7 +85,7 @@ class CoverageDB(dict):
         """Print sorted coverage with optional bins details.
 
         Args:
-            logger (func): a logger object.
+            logger (func): a logging function (e.g. logger.info or print).
             bins (bool, optional): print bins details.
             node (str, optional): starting node of the coverage trie.
         """
