@@ -130,12 +130,12 @@ and finds out whether the variable is within a given range.
               bins = [0, 1]
           )
           @CoverPoint ("transfer.length",
-              xf = lambda xfer.length,
+              xf = lambda xfer: xfer.length,
               bins = [(1, 10), (10, 100)],
               rel = lambda val, b: b(0) <= val <= b(1)
           )
           @CoverPoint("transfer.type",
-              xf = lambda xfer.type,
+              xf = lambda xfer: xfer.type,
               bins = [A, B]
           )
           @CoverCross("transfer.tr_cross",
