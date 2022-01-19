@@ -85,7 +85,7 @@ class CoverageDB(dict):
         """Print sorted coverage with optional bins details.
 
         Args:
-            logger (func): a logger object.
+            logger (func): a logging function (e.g. logger.info or print).
             bins (bool, optional): print bins details.
             node (str, optional): starting node of the coverage trie.
         """
@@ -441,8 +441,8 @@ class CoverPoint(CoverItem):
         weight (int, optional): a ``CoverPoint`` weight (by default ``1``).
         at_least (int, optional): the number of hits per bins to be considered
             as covered (by default ``1``).
-        inj (bool, optional): "injection" feature, defines that more than a
-            single bin can be matched at one sampling (default ``False``).
+        inj (bool, optional): "injection" feature, defines that only one
+            bin can be matched at single sampling (default ``True``).
 
     Example:
 
@@ -474,7 +474,7 @@ class CoverPoint(CoverItem):
         if name in coverage_db:
             return coverage_db[name]
         else:
-            return super(CoverPoint, cls).__new__(CoverPoint)
+            return super(CoverPoint, cls).__new__(cls)
 
     def __init__(self, name, vname=None, xf=None, rel=None, bins=[],
                  bins_labels=None, weight=1, at_least=1, inj=True):
@@ -657,7 +657,7 @@ class CoverCross(CoverItem):
         if name in coverage_db:
             return coverage_db[name]
         else:
-            return super(CoverCross, cls).__new__(CoverCross)
+            return super(CoverCross, cls).__new__(cls)
 
     def __init__(self, name, items=[], ign_bins=[], weight=1, at_least=1):
         if not name in coverage_db:

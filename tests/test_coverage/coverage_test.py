@@ -25,6 +25,7 @@ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
 ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. '''
+import collections
 
 """
 Constrained-random verification features unittest.
@@ -384,6 +385,7 @@ def test_bins_labels():
     assert coverage.coverage_db["top.t10.cross"].coverage == 4
 
 
+
 # accessing 'CoverItem.detailed_coverage' field
 def test_coveritem_detailed_coverage():
     print("Running test_coveritem_detailed_coverage")
@@ -408,3 +410,39 @@ def test_coveritem_detailed_coverage():
     assert len(detailed_coverage) == 2
     assert detailed_coverage['top.t11.c1'] is not None
     assert detailed_coverage['top.t11.c2'] is not None
+
+    
+def test_tutorial_coverpoint_transition():
+
+    addr_prev = collections.deque(4*[0], 4) # we would need up to 4 values in this example
+
+    # auxiliary relation function to define bins matching
+    def transition_relation(val_, bin_):
+        return tuple(addr_prev)[:len(bin_)] == bin_[::-1]  # check equivalence of the meaningful elements
+
+    def store_val(val_):
+        addr_prev.appendleft(val_)  # we update the data set here (side effect)
+
+    @coverage.CoverPoint(
+      "addres_cov.ADDRESS",
+      vname="addr",
+      xf = store_val,
+      rel = transition_relation,
+      bins = [(0, 1), (1, 0), (1, 2), (2, 1), (0, 1, 2, 3), (1, 4, 7)],
+      bins_labels = ["adr_0_to_1", "adr_1_to_0", "adr_1_to_2", "adr_2_to_1", "adr_0_1_2_3", "adr_1_4_7"]
+    )
+    def sample(addr):
+        pass
+
+    sample(0)
+    sample(1)
+    assert coverage.coverage_db["addres_cov.ADDRESS"].coverage == 1
+    sample(0)
+    assert coverage.coverage_db["addres_cov.ADDRESS"].coverage == 2
+    sample(1)
+    sample(2)
+    sample(3)
+    assert coverage.coverage_db["addres_cov.ADDRESS"].coverage == 4
+
+
+

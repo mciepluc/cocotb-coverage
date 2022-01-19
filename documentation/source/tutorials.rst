@@ -198,27 +198,28 @@ Let's take another example of coverage - the `transition bins <http://www.asic-w
 
 The same can be done in cocotb-coverage as matching the data type that contains multiple values.
 These values would represent the transition.
-We need to use an auxiliary relation function and data set to store these previous values.
+We need to use an auxiliary transfer, relation function and data set to store these previous values and match them.
 `Deque <https://docs.python.org/3/library/collections.html#collections.deque>`_ of fixed size can be used here.
 
 .. code-block:: python
 
-    # auxiliary data set containing previously sampled values
     addr_prev = collections.deque(4*[0], 4) # we would need up to 4 values in this example
 
     # auxiliary relation function to define bins matching
     def transition_relation(val_, bin_):
-       addr_prev.appendleft(val_) #we update the data set here (side effect)
-       return list(addr_prev)[:len(bin_)] == bin_ #check equivalence of the meaningful elements
+        return tuple(addr_prev)[:len(bin_)] == bin_[::-1]  # check equivalence of the meaningful elements
 
-    CoverPoint(
+    def store_val(val_):
+        addr_prev.appendleft(val_)  # we update the data set here (side effect)
+
+    @coverage.CoverPoint(
       "addres_cov.ADDRESS",
       vname="addr",
+      xf = store_val,
       rel = transition_relation,
-      bins = [[0, 1], [1, 0], [1, 2], [2, 1], [0, 1, 2, 3], [1, 4, 7]],
+      bins = [(0, 1), (1, 0), (1, 2), (2, 1), (0, 1, 2, 3), (1, 4, 7)],
       bins_labels = ["adr_0_to_1", "adr_1_to_0", "adr_1_to_2", "adr_2_to_1", "adr_0_1_2_3", "adr_1_4_7"]
     )
-
 Different type of transitions (consecutive, range etc.) can be easily implemented using the approach similar to the above.
 
 Please note, that in cocotb-coverage all bins must be explicitly defined in the "bins" list.
