@@ -385,6 +385,33 @@ def test_bins_labels():
     assert coverage.coverage_db["top.t10.cross"].coverage == 4
 
 
+
+# accessing 'CoverItem.detailed_coverage' field
+def test_coveritem_detailed_coverage():
+    print("Running test_coveritem_detailed_coverage")
+
+    for i in range(10):
+        x = random.randint(0, 10)
+
+        @coverage.CoverPoint("top.t11.c1", vname="i", bins=list(range(10)))
+        @coverage.CoverPoint("top.t11.c2", vname="x", bins=list(range(10)))
+        def sample(i, x):
+            pass
+
+        sample(i, x)
+
+    detailed_coverage = coverage.coverage_db['top'].detailed_coverage
+    assert isinstance(detailed_coverage, dict)
+    assert isinstance(detailed_coverage['top.t11'], dict)
+    assert isinstance(detailed_coverage['top.t11'], dict)
+
+    detailed_coverage = coverage.coverage_db['top.t11'].detailed_coverage
+    assert isinstance(detailed_coverage, dict)
+    assert len(detailed_coverage) == 2
+    assert detailed_coverage['top.t11.c1'] is not None
+    assert detailed_coverage['top.t11.c2'] is not None
+
+    
 def test_tutorial_coverpoint_transition():
 
     addr_prev = collections.deque(4*[0], 4) # we would need up to 4 values in this example

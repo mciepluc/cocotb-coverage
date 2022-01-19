@@ -378,7 +378,7 @@ class CoverItem(object):
         """
         coverage = {}
         for child in self._children:
-            coverage.append(child.detailed_coverage)
+            coverage[child._name] = child.detailed_coverage
         return coverage
 
     @property
