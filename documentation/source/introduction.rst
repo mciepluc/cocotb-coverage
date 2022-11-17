@@ -307,9 +307,9 @@ constraints.
                   self.add_rand("length", list(range(1, 5000)))
                   self.add_rand("pld", list(range(0, 4999)))
                   def frame_sizes(length, size):
-                      if (size=="SMALL") length < 64
-                      elif (size=="MED") 64 <= length < 2000
-                      else length >= 2000
+                      if (size=="SMALL") return length < 64
+                      elif (size=="MED") return 64 <= length < 2000
+                      else return length >= 2000
                   self.add_constraint(frame_sizes)
                   self.add_constraint(
                       lambda length, pld: pld < length
