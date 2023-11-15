@@ -485,3 +485,39 @@ def test_constraints_tutorial():
         assert bar.y <= bar.z
         assert bar.x + bar.y == 8
 
+
+def test_issue77():
+
+    class Test(crv.Randomized):
+        def __init__(self):
+            crv.Randomized.__init__(self)
+            self.x = 0
+            self.y = 0
+
+            self.add_rand("x", list(range(10)))
+            self.add_rand("y", list(range(20)))
+
+            def c_constraint(x):
+                return x == 4
+
+            self.add_constraint(c_constraint)
+
+        def __repr__(self):
+            return f"x={self.x} y={self.y}"
+
+    print("this works")
+    tests = []
+    for _ in range(10):
+        t = Test()
+        t.randomize_with(lambda x: 1 <= x <= 4)
+        tests.append(t)
+    print(tests)
+
+    print("\nthis doesn't")
+    tests = [Test().randomize_with(lambda x: 1 <= x <= 4) for _ in range(10)]
+    print(tests)
+
+    print("\nnor this")
+    tests = [Test() for _ in range(10)]
+    map(Test.randomize_with, tests)
+    print(tests)
