@@ -12,7 +12,7 @@ The implemented functionality is intended to be easily understandable by SystemV
 There is an option to export coverage database to a readable XML or YML format and a function which allows for merging such files is provided.
 
 ### Installation
-The package can be installed with pip. Version ```1.1.0``` is the latest one and recommended.
+The package can be installed with pip. Version ```1.2.0``` is the latest one and recommended.
 ```
 pip install cocotb-coverage
 ```
@@ -28,6 +28,7 @@ pip install cocotb-coverage
 * example advanced verification project - [apbi2c_cocotb_example](https://github.com/mciepluc/apbi2c_cocotb_example)
 
 ### Roadmap
+* 1.2 released - 15 Nov 2023
 * 1.1 released - 7 Aug 2020
 * Planned basic support for UCIS coverage database format
 * Any suggestions welcome - you are encouraged to open an issue!
