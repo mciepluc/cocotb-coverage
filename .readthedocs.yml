@@ -8,12 +8,10 @@ build:
   os: ubuntu-22.04
   tools:
     python: "3.11"
-  apt_packages:
-    - graphviz
 
 python:
   install:
-    - requirements: docs/requirements.txt
+    - requirements: documentation/requirements.txt
     - method: pip
       path: .
       extra_requirements:
