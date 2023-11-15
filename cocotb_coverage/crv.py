@@ -1,4 +1,4 @@
-# Copyright (c) 2016-2019, TDK Electronics
+# Copyright (c) 2016-2023, MC ASIC Design Consulting
 # All rights reserved.
 #
 # Author: Marek Cieplucha, https://github.com/mciepluc
