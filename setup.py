@@ -49,7 +49,7 @@ setup(
     author_email='',
     packages=find_packages(),
     install_requires= ['cocotb >= 2.0', 'python-constraint', 'pyyaml'],
-    python_requires=">=3.8",
+    python_requires=">=3.11",
     platforms='any',
     classifiers=[
         "Programming Language :: Python :: 3",
