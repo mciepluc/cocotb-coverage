@@ -48,8 +48,8 @@ setup(
     author='Marek Cieplucha',
     author_email='',
     packages=find_packages(),
-    install_requires= ['cocotb ~= 1.8', 'python-constraint', 'pyyaml'],
-    python_requires=">=3.3",
+    install_requires= ['cocotb >= 2.0', 'python-constraint', 'pyyaml'],
+    python_requires=">=3.8",
     platforms='any',
     classifiers=[
         "Programming Language :: Python :: 3",

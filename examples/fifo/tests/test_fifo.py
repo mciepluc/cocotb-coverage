@@ -1,5 +1,5 @@
 
-'''Copyright (c) 2019-2023, MC ASIC Design Consulting
+'''Copyright (c) 2019-2025, MC ASIC Design Consulting
 All rights reserved.
 
 Author: Marek Cieplucha, https://github.com/mciepluc
@@ -37,6 +37,7 @@ Data consistency is checked with FIFO model (double-ended queue).
 
 import cocotb
 from cocotb.triggers import Timer, RisingEdge, ReadOnly
+from cocotb.clock import Clock
 
 from cocotb_coverage.coverage import *
 
@@ -51,14 +52,13 @@ class FifoStatus():
     def __init__(self, dut):
         self.dut = dut
 
-    @cocotb.coroutine
-    def update(self):
-        yield ReadOnly()
-        self.empty = (self.dut.fifo_empty == 1)
-        self.full = (self.dut.fifo_full == 1)
-        self.threshold = (self.dut.fifo_threshold == 1)
-        self.overflow = (self.dut.fifo_overflow == 1)
-        self.underflow = (self.dut.fifo_underflow == 1)
+    async def update(self):
+        await ReadOnly()
+        self.empty = (self.dut.fifo_empty.value == 1)
+        self.full = (self.dut.fifo_full.value  == 1)
+        self.threshold = (self.dut.fifo_threshold.value  == 1)
+        self.overflow = (self.dut.fifo_overflow.value  == 1)
+        self.underflow = (self.dut.fifo_underflow.value  == 1)
 
 #functional coverage - check if all FIFO states have been reached
 #and check if read or write operation performed in every FIFO state
@@ -76,59 +76,48 @@ FIFO_Coverage = coverage_section (
   CoverCross("top.rwXunderflow", items = ["top.rw", "top.fifo_underflow"])
 )
 
-#simple clock generator
-@cocotb.coroutine
-def clock_gen(signal, period=10000):
-    while True:
-        signal <= 0
-        yield Timer(period/2)
-        signal <= 1
-        yield Timer(period/2)
-
-@cocotb.test()
-def fifo_test(dut):
+@cocotb.test
+async def fifo_test(dut):
     """ FIFO Test """
 
-    log = cocotb.logging.getLogger("cocotb.test") #logger instance
-    cocotb.fork(clock_gen(dut.clk, period=100)) #start clock running
+    cocotb.start_soon(Clock(dut.clk, period=100).start()) #start clock running
 
     fifo_model = deque() #simple scoreboarding - FIFO model as double-ended queue
 
     #reset & init
-    dut.rst_n <= 1
-    dut.wr <= 0
-    dut.rd <= 0
-    dut.data_in <= 0
+    dut.rst_n.value = 1
+    dut.wr.value  = 0
+    dut.rd.value  = 0
+    dut.data_in.value  = 0
 
-    yield Timer(1000)
-    dut.rst_n <= 0
-    yield Timer(1000)
-    dut.rst_n <= 1
+    await Timer(1000)
+    dut.rst_n.value  = 0
+    await Timer(1000)
+    dut.rst_n.value  = 1
 
     #procedure of processing data (FIFO logic)
     #coverage sampled here - at each function call
     @FIFO_Coverage
-    @cocotb.coroutine
-    def process_data(data, rw, status):
+    async def process_data(data, rw, status):
         success = True
         if rw: #read
-            yield RisingEdge(dut.clk)
+            await RisingEdge(dut.clk)
             #even if fifo empty, try to access in order to reach underflow status
             if (status.empty):
                 success = False
             else:
-                data = int(dut.data_out)
-            dut.rd <= 1
-            yield RisingEdge(dut.clk)
-            dut.rd <= 0
+                data = int(dut.data_out.value)
+            dut.rd.value = 1
+            await RisingEdge(dut.clk)
+            dut.rd.value = 0
         elif not rw:
-            yield RisingEdge(dut.clk)
-            dut.data_in <= data
-            dut.wr <= 1
-            yield RisingEdge(dut.clk)
-            dut.wr <= 0
+            await RisingEdge(dut.clk)
+            dut.data_in.value = data
+            dut.wr.value = 1
+            await RisingEdge(dut.clk)
+            dut.wr.value = 0
             #if FIFO full, data was not written (overflow status)
-            if status.full:
+            if status.full :
                 success = False
         return data, success
 
@@ -140,27 +129,27 @@ def fifo_test(dut):
         data = random.randint(0,255) if not rw else None
 
         #call coroutines
-        yield status.update() #check FIFO state
+        await status.update() #check FIFO state
         #process data, and check if succeded
-        data, success = yield process_data(data, rw, status)
+        data, success = await process_data(data, rw, status)
 
         if rw: #read
             if success:
                 #if successful read, check read data with the model
                 assert(data == fifo_model.pop())
-                log.info("Data read from fifo: %X", data)
+                cocotb.log.info("Data read from fifo: %X", data)
             else:
-                log.info("Data NOT read, fifo EMPTY!")
+                cocotb.log.info("Data NOT read, fifo EMPTY!")
         else: #write
             if success:
                 #if successful write, append written data to the model
                 fifo_model.appendleft(data)
-                log.info("Data written to fifo: %X", data)
+                cocotb.log.info("Data written to fifo: %X", data)
             else:
-                log.info("Data NOT written, fifo FULL!")
+                cocotb.log.info("Data NOT written, fifo FULL!")
 
     #print coverage report
-    coverage_db.report_coverage(log.info, bins=True)
+    coverage_db.report_coverage(cocotb.log.info, bins=True)
     #export
     coverage_db.export_to_xml(filename="coverage_fifo.xml")
     coverage_db.export_to_yaml(filename="coverage_fifo.yml")
