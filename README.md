@@ -12,7 +12,8 @@ The implemented functionality is intended to be easily understandable by SystemV
 There is an option to export coverage database to a readable XML or YML format and a function which allows for merging such files is provided.
 
 ### Installation
-The package can be installed with pip. Version ```1.2.0``` is the latest one and recommended.
+The package can be installed with pip. Version ```2.0.0``` is the latest one and recommended, adjusted for cocotb >= 2.0. 
+For cocotb vesrions < 2.0, you may need to use ```1.2.0``` to get the examples and tests working. However, the core of cocotb-coverage is the same.
 ```
 pip install cocotb-coverage
 ```
@@ -22,12 +23,13 @@ pip install cocotb-coverage
 * cocotb core package - [cocotb](https://github.com/potentialventures/cocotb)
 * Constraint Solving Problem resolver used in this project - [python-constraint](https://github.com/python-constraint/python-constraint)
 * [documentation](https://cocotb-coverage.readthedocs.io/en/latest/)
-* [PyPI package](https://pypi.org/project/cocotb-coverage/1.1.dev0)
+* [PyPI package](https://pypi.org/project/cocotb-coverage/)
 * DVCon 2017 Paper - [New Constrained Random and MDV Methodology using Python](http://events.dvcon.org/2017/proceedings/papers/02_3.pdf)
 * DVCon 2017 Presentation - [SLIDES](http://events.dvcon.org/2017/proceedings/slides/02_3.pdf)
 * example advanced verification project - [apbi2c_cocotb_example](https://github.com/mciepluc/apbi2c_cocotb_example)
 
 ### Roadmap
+* 2.0 released - 3 Oct 2025
 * 1.2 released - 15 Nov 2023
 * 1.1 released - 7 Aug 2020
 * Planned basic support for UCIS coverage database format
