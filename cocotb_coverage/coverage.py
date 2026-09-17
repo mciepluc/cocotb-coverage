@@ -1005,7 +1005,7 @@ def merge_coverage(logger, merged_file_name, *files):
                             if elem.attrib['abs_name'] not in name_to_elem.keys()]
             new_elements.sort(key=lambda _: _.attrib['abs_name'].count('.'))
             # Bins that will be updated
-            items_to_update = [elem for elem in db.iter() if 'bin' in elem.tag
+            items_to_update = [elem for elem in db.iter() if 'bin' in elem.attrib
                                and elem not in new_elements]
         else:
             pre_merge_db_keys = list(merged_db.keys())
@@ -1131,4 +1131,3 @@ def coverageSection(*coverItems):
         "Function coverageSection() is deprecated, use coverage_section() instead"
     )
     return coverage_section(*coverItems)
-
