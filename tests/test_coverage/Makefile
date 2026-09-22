@@ -3,8 +3,9 @@
 #Just run it by:
 #python -m pytest
 
-MODULE = coverage_test_main
-TOPLEVEL := sample_module
+COCOTB_TEST_MODULES = coverage_test_main
+COCOTB_TOPLEVEL := sample_module
+export COCOTB_RANDOM_SEED := 0
 
 TESTS_DIR = $(abspath $(dir $(abspath $(shell pwd))))
 
