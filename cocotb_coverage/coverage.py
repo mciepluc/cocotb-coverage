@@ -166,6 +166,7 @@ class CoverageDB(dict):
                 self[name_elem_full].cover_percentage, 2))
             attrib_dict['abs_name'] = prefix+name_elem_full
             if (type(self[name_elem_full]) is not CoverItem):
+                attrib_dict['type'] = str(type(self[name_elem_full]))
                 attrib_dict['weight'] = str(self[name_elem_full].weight)
                 attrib_dict['at_least'] = str(
                     self[name_elem_full].at_least)
@@ -984,6 +985,14 @@ def merge_coverage(logger, merged_file_name, *files):
 
     merged_db = dbs[0]
 
+    def is_covercheck(attributes, bin_names):
+        if 'type' in attributes:
+            return attributes['type'] == str(CoverCheck)
+        # Older XML exports have no type. A CoverCheck has two status bins
+        # but only one weight of total size; a two-bin CoverPoint has two.
+        return (int(attributes['size']) == int(attributes['weight'])
+                and set(bin_names) == {'PASS', 'FAIL'})
+
     def merge():
         for db in dbs[1:]:
             merge_element(db)
@@ -1062,6 +1071,18 @@ def merge_coverage(logger, merged_file_name, *files):
                     # Update up to the root
                     update_parent(parent, coverage_upd, size_upd)
 
+        def update_covercheck(name, attributes, bins):
+            old_coverage = int(attributes['coverage'])
+            new_coverage = 0
+            if bins['FAIL'] == 0 and bins['PASS'] >= int(attributes['at_least']):
+                new_coverage = int(attributes['weight'])
+            percentage = round(new_coverage * 100 / int(attributes['size']), 2)
+            attributes['coverage'] = (str(new_coverage) if filetype == 'xml'
+                                      else new_coverage)
+            attributes['cover_percentage'] = (str(percentage) if filetype == 'xml'
+                                              else percentage)
+            update_parent(name, coverage_upd=new_coverage - old_coverage)
+
         for elem in new_elements:
             # Update parents only once per new cg/cp
             if filetype == 'xml':
@@ -1090,6 +1111,13 @@ def merge_coverage(logger, merged_file_name, *files):
                     name_to_elem[abs_name].attrib['hits'] = str(hits+hits_orig)
                     # Check if upstream needs updating
                     parent_name = get_parent_name(abs_name)
+                    parent = name_to_elem[parent_name]
+                    if is_covercheck(parent.attrib,
+                                     (child.get('bin') for child in parent)):
+                        bins = {child.attrib['bin']: int(child.attrib['hits'])
+                                for child in parent}
+                        update_covercheck(parent_name, parent.attrib, bins)
+                        continue
                     parent_hits_threshold = int(
                         name_to_elem[parent_name].attrib['at_least'])
                     if (hits_orig < parent_hits_threshold
@@ -1105,7 +1133,9 @@ def merge_coverage(logger, merged_file_name, *files):
                     if (hits_orig < at_least and hits_orig+hits >= at_least):
                         new_hits_cnt += 1
                     merged_db[elem]['bins:_hits'][bin_name] += hits
-                if new_hits_cnt > 0:
+                if is_covercheck(merged_db[elem], merged_db[elem]['bins:_hits']):
+                    update_covercheck(elem, merged_db[elem], merged_db[elem]['bins:_hits'])
+                elif new_hits_cnt > 0:
                     coverage_upd = weight*new_hits_cnt
                     merged_db[elem]['coverage'] = merged_db[elem]['coverage']+coverage_upd
                     merged_db[elem]['cover_percentage'] = round(
