@@ -940,8 +940,10 @@ def merge_coverage(logger, merged_file_name, *files):
         *files ((multiple) str): comma separated filenames to merge coverage from
 
     Example:
-
-    >>> merge_coverage('merged.xml', 'one.xml', 'other.xml') # merge one and other
+    
+    >>> import logging
+    >>> logger = logging.getLogger(__name__).info
+    >>> merge_coverage(logger, 'merged.xml', 'one.xml', 'other.xml') # merge one and other
     """
     from xml.etree import ElementTree as et
     import yaml
